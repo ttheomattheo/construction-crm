@@ -121,19 +121,6 @@ function AddClientModal({ onClose, onAdd }) {
           <button onClick={onClose} className="flex-1 bg-[#0B0F1A] border border-[#1E2D45] text-slate-400 font-semibold text-sm py-3 rounded-xl hover:text-white transition-colors">Anuluj</button>
           <button onClick={handleSubmit} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm py-3 rounded-xl transition-colors">✓ Zapisz klienta</button>
         </div>
-      {/* Bottom navigation — tylko na mobile */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#141929] border-t border-[#1E2D45] flex z-50">
-          {navItems.map(item => (
-            <button key={item.id} onClick={() => setPage(item.id)}
-              className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 relative transition-all ${page===item.id ? "text-blue-400" : "text-slate-500"}`}>
-              <span className="text-xl">{item.icon}</span>
-              <span className="text-xs font-medium">{item.label}</span>
-              {item.id==="reminders" && pendingCount>0 && (
-                <span className="absolute top-2 right-1/4 bg-red-500 text-white text-xs font-black w-4 h-4 rounded-full flex items-center justify-center">{pendingCount}</span>
-              )}
-            </button>
-          ))}
-        </div>
       </div>
     </div>
   );
@@ -185,19 +172,6 @@ function AddClientModal({ onClose, onAdd }) {
           <button onClick={onClose} className="flex-1 bg-[#0B0F1A] border border-[#1E2D45] text-slate-400 font-semibold text-sm py-3 rounded-xl hover:text-white transition-colors">Anuluj</button>
           <button onClick={handleSubmit} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm py-3 rounded-xl transition-colors">✓ Zapisz</button>
         </div>
-      {/* Bottom navigation — tylko na mobile */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#141929] border-t border-[#1E2D45] flex z-50">
-          {navItems.map(item => (
-            <button key={item.id} onClick={() => setPage(item.id)}
-              className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 relative transition-all ${page===item.id ? "text-blue-400" : "text-slate-500"}`}>
-              <span className="text-xl">{item.icon}</span>
-              <span className="text-xs font-medium">{item.label}</span>
-              {item.id==="reminders" && pendingCount>0 && (
-                <span className="absolute top-2 right-1/4 bg-red-500 text-white text-xs font-black w-4 h-4 rounded-full flex items-center justify-center">{pendingCount}</span>
-              )}
-            </button>
-          ))}
-        </div>
       </div>
     </div>
   );
@@ -248,19 +222,6 @@ function AddOpportunityModal({ onClose, onAdd, clients }) {
         <div className="p-5 border-t border-[#1E2D45] flex gap-3">
           <button onClick={onClose} className="flex-1 bg-[#0B0F1A] border border-[#1E2D45] text-slate-400 font-semibold text-sm py-3 rounded-xl hover:text-white transition-colors">Anuluj</button>
           <button onClick={handleSubmit} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm py-3 rounded-xl transition-colors">✓ Zapisz szansę</button>
-        </div>
-      {/* Bottom navigation — tylko na mobile */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#141929] border-t border-[#1E2D45] flex z-50">
-          {navItems.map(item => (
-            <button key={item.id} onClick={() => setPage(item.id)}
-              className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 relative transition-all ${page===item.id ? "text-blue-400" : "text-slate-500"}`}>
-              <span className="text-xl">{item.icon}</span>
-              <span className="text-xs font-medium">{item.label}</span>
-              {item.id==="reminders" && pendingCount>0 && (
-                <span className="absolute top-2 right-1/4 bg-red-500 text-white text-xs font-black w-4 h-4 rounded-full flex items-center justify-center">{pendingCount}</span>
-              )}
-            </button>
-          ))}
         </div>
       </div>
     </div>
@@ -323,19 +284,6 @@ function AddOpportunityModal({ onClose, onAdd, clients }) {
               </div>
             );
           })}
-        </div>
-      {/* Bottom navigation — tylko na mobile */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#141929] border-t border-[#1E2D45] flex z-50">
-          {navItems.map(item => (
-            <button key={item.id} onClick={() => setPage(item.id)}
-              className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 relative transition-all ${page===item.id ? "text-blue-400" : "text-slate-500"}`}>
-              <span className="text-xl">{item.icon}</span>
-              <span className="text-xs font-medium">{item.label}</span>
-              {item.id==="reminders" && pendingCount>0 && (
-                <span className="absolute top-2 right-1/4 bg-red-500 text-white text-xs font-black w-4 h-4 rounded-full flex items-center justify-center">{pendingCount}</span>
-              )}
-            </button>
-          ))}
         </div>
       </div>
     </div>
@@ -700,8 +648,8 @@ export default function App() {
   );
 
   return (
-    <div className="flex h-screen bg-[#0B0F1A] font-sans overflow-hidden">
-      <div className="hidden md:flex w-52 flex-shrink-0 bg-[#141929] border-r border-[#1E2D45] flex-col py-6 flex-shrink-0">
+    <div className="flex flex-col-reverse md:flex-row h-screen bg-[#0B0F1A] font-sans overflow-hidden">
+      <div className="hidden md:flex w-52 bg-[#141929] border-r border-[#1E2D45] flex-col py-6 flex-shrink-0">
         <div className="px-5 pb-6 border-b border-[#1E2D45]">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-lg">🏗️</div>
@@ -743,19 +691,6 @@ export default function App() {
         </div>
         <div className="flex-1 overflow-auto p-4 pb-24 md:pb-6">
           {pages[page]}
-        </div>
-      {/* Bottom navigation — tylko na mobile */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#141929] border-t border-[#1E2D45] flex z-50">
-          {navItems.map(item => (
-            <button key={item.id} onClick={() => setPage(item.id)}
-              className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 relative transition-all ${page===item.id ? "text-blue-400" : "text-slate-500"}`}>
-              <span className="text-xl">{item.icon}</span>
-              <span className="text-xs font-medium">{item.label}</span>
-              {item.id==="reminders" && pendingCount>0 && (
-                <span className="absolute top-2 right-1/4 bg-red-500 text-white text-xs font-black w-4 h-4 rounded-full flex items-center justify-center">{pendingCount}</span>
-              )}
-            </button>
-          ))}
         </div>
       </div>
     </div>
