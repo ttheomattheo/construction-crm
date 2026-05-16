@@ -828,6 +828,7 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [notifOpen, setNotifOpen] = useState(false);
 
   useEffect(() => { loadAll(); }, []);
 
@@ -980,9 +981,43 @@ export default function App() {
               <span>🔍</span>
               <span className="hidden md:block">Szukaj...</span>
             </button>
-            <div className="w-9 h-9 bg-yellow-500/20 border border-yellow-500/30 rounded-xl flex items-center justify-center relative cursor-pointer">
-              🔔
-              {pendingCount>0 && <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />}
+            <div className="relative">
+              <button onClick={() => setNotifOpen(o => !o)} className="w-9 h-9 bg-yellow-500/20 border border-yellow-500/30 rounded-xl flex items-center justify-center relative cursor-pointer hover:bg-yellow-500/30 transition-colors">
+                🔔
+                {pendingCount>0 && <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />}
+              </button>
+              {notifOpen && (
+                <div className="absolute right-0 top-11 w-80 bg-[#141929] border border-[#1E2D45] rounded-2xl shadow-2xl z-50 overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-[#1E2D45]">
+                    <div className="text-white font-bold text-sm">🔔 Przypomnienia</div>
+                    <span className="bg-red-500 text-white text-xs font-black px-2 py-0.5 rounded-full">{pendingCount}</span>
+                  </div>
+                  <div className="max-h-80 overflow-y-auto">
+                    {reminders.filter(r => !r.done).length === 0 ? (
+                      <div className="p-6 text-center text-slate-500 text-sm">Brak oczekujących przypomnień 🎉</div>
+                    ) : (
+                      reminders.filter(r => !r.done).slice(0, 8).map(r => {
+                        const pr = priorityConfig[r.priority];
+                        return (
+                          <div key={r.id} onClick={() => { setPage("reminders"); setNotifOpen(false); }} className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 cursor-pointer border-b border-[#1E2D45] last:border-0 transition-colors">
+                            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${pr.dot}`} />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-white text-sm font-medium truncate">{r.title}</div>
+                              <div className="text-slate-500 text-xs">{r.clientName} · {r.date} {r.time}</div>
+                            </div>
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-lg ${pr.bg} ${pr.color} flex-shrink-0`}>{r.priority}</span>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                  <div className="px-4 py-3 border-t border-[#1E2D45]">
+                    <button onClick={() => { setPage("reminders"); setNotifOpen(false); }} className="w-full text-blue-400 text-sm font-semibold hover:text-blue-300 transition-colors">
+                      Zobacz wszystkie →
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
