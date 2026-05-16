@@ -606,6 +606,7 @@ export default function App() {
   const [reminders, setReminders] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => { loadAll(); }, []);
 
@@ -636,6 +637,45 @@ export default function App() {
     dashboard: "Dashboard", clients: "Klienci",
     reminders: "Przypomnienia", opportunities: "Szanse sprzedaży", lost: "Utraceni klienci",
   };
+
+  if (menuOpen) return (
+    <div className="fixed inset-0 z-50 flex">
+      <div className="w-72 bg-[#141929] border-r border-[#1E2D45] flex flex-col py-6 h-full">
+        <div className="px-5 pb-6 border-b border-[#1E2D45] flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-lg">🏗️</div>
+            <div>
+              <div className="text-white font-black text-sm">BuildCRM</div>
+              <div className="text-slate-500 text-xs">Handlowiec</div>
+            </div>
+          </div>
+          <button onClick={() => setMenuOpen(false)} className="text-slate-500 hover:text-white text-xl w-8 h-8 flex items-center justify-center">✕</button>
+        </div>
+        <nav className="flex-1 px-3 pt-4">
+          {navItems.map(item => (
+            <button key={item.id} onClick={() => { setPage(item.id); setMenuOpen(false); }}
+              className={`flex items-center gap-3 w-full px-3 py-3 rounded-xl mb-1 text-sm font-medium transition-all ${page===item.id ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" : "text-slate-400 hover:text-white hover:bg-white/5"}`}>
+              <span className="text-xl">{item.icon}</span>
+              {item.label}
+              {item.id==="reminders" && pendingCount>0 && (
+                <span className="ml-auto bg-red-500 text-white text-xs font-black w-6 h-6 rounded-full flex items-center justify-center">{pendingCount}</span>
+              )}
+            </button>
+          ))}
+        </nav>
+        <div className="px-4 pt-4 border-t border-[#1E2D45]">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center text-blue-400 font-bold">P</div>
+            <div>
+              <div className="text-white text-sm font-semibold">Piotr Handlowiec</div>
+              <div className="text-slate-500 text-xs">Region Południe</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="flex-1 bg-black/60 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />
+    </div>
+  );
 
   if (loading) return (
     <div className="flex h-screen bg-[#0B0F1A] items-center justify-center">
@@ -683,7 +723,10 @@ export default function App() {
       </div>
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="bg-[#141929] border-b border-[#1E2D45] px-6 py-4 flex items-center justify-between flex-shrink-0">
-          <div className="text-white font-bold text-base">{pageLabels[page]}</div>
+          <div className="flex items-center gap-3">
+            <button onClick={() => setMenuOpen(true)} className="md:hidden w-9 h-9 bg-[#1E2D45] rounded-xl flex items-center justify-center text-white text-lg">☰</button>
+            <div className="text-white font-bold text-base">{pageLabels[page]}</div>
+          </div>
           <div className="w-9 h-9 bg-yellow-500/20 border border-yellow-500/30 rounded-xl flex items-center justify-center relative cursor-pointer">
             🔔
             {pendingCount>0 && <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />}
