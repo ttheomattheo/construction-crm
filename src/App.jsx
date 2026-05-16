@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "./supabase";
 
 const initialClients = [
   { id: 1, name: "Budmax Sp. z o.o.", person: "Marek Kowalski", status: "Aktywny", potential: "VIP", revenue: "138 400 zł", margin: "22%", city: "Warszawa", lastContact: "2 dni temu", phone: "+48 601 234 567", email: "m.kowalski@budmax.pl", notes: "Stały klient od 3 lat. Preferuje kontakt 9-12." },
@@ -97,12 +98,20 @@ function Field({ label, name, value, onChange, type = "text", options, required 
     revenue: "0 zł", margin: "0%", notes: "",
   });
   const handleChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!form.name || !form.person || !form.phone) {
       alert("Wypełnij wymagane pola: Firma, Osoba kontaktowa, Telefon");
       return;
     }
-    onAdd({ ...form, id: Date.now(), lastContact: "Właśnie dodany" });
+    const { data, error } = await supabase.from("clients").insert([{
+      name: form.name, person: form.person, phone: form.phone,
+      email: form.email, city: form.city, status: form.status,
+      potential: form.potential, revenue: form.revenue,
+      margin: form.margin, notes: form.notes,
+      last_contact: "Właśnie dodany",
+    }]).select();
+    if (error) { alert("Błąd zapisu: " + error.message); return; }
+    if (data) onAdd({...data[0], lastContact: data[0].last_contact});
     onClose();
   };
   return (
@@ -581,9 +590,28 @@ function LostClients({ clients }) {
 
 export default function App() {
   const [page, setPage] = useState("dashboard");
-  const [clients, setClients] = useState(initialClients);
-  const [reminders, setReminders] = useState(initialReminders);
-  const [opportunities, setOpportunities] = useState(initialOpportunities);
+  const [clients, setClients] = useState([]);
+  const [reminders, setReminders] = useState([]);
+  const [opportunities, setOpportunities] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadAll();
+  }, []);
+
+  async function loadAll() {
+    setLoading(true);
+    const [c, r, o] = await Promise.all([
+      supabase.from("clients").select("*").order("created_at", { ascending: false }),
+      supabase.from("reminders").select("*").order("created_at", { ascending: false }),
+      supabase.from("opportunities").select("*").order("created_at", { ascending: false }),
+    ]);
+    if (c.data) setClients(c.data.map(x => ({...x, lastContact: x.last_contact})));
+    if (r.data) setReminders(r.data.map(x => ({...x, clientName: x.client_name})));
+    if (o.data) setOpportunities(o.data.map(x => ({...x, clientName: x.client_name})));
+    setLoading(false);
+  }
+
   const pendingCount = reminders.filter(r => !r.done).length;
 
   const pages = {
@@ -598,6 +626,16 @@ export default function App() {
     dashboard: "Dashboard", clients: "Klienci",
     reminders: "Przypomnienia", opportunities: "Szanse sprzedaży", lost: "Utraceni klienci",
   };
+
+  if (loading) return (
+    <div className="flex h-screen bg-[#0B0F1A] items-center justify-center">
+      <div className="text-center">
+        <div className="text-4xl mb-4">🏗️</div>
+        <div className="text-white font-bold text-lg">Ładowanie BuildCRM...</div>
+        <div className="text-slate-400 text-sm mt-2">Łączenie z bazą danych</div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="flex h-screen bg-[#0B0F1A] font-sans overflow-hidden">
