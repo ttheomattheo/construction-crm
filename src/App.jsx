@@ -744,6 +744,53 @@ function ActivityModal({ client, onClose, loadActivities, addActivity }) {
   );
 }
 
+function GlobalSearch({ clients, reminders, opportunities, onClose, setPage }) {
+  const [query, setQuery] = useState("");
+
+  const results = query.length < 2 ? [] : [
+    ...clients.filter(c => c.name?.toLowerCase().includes(query.toLowerCase()) || c.person?.toLowerCase().includes(query.toLowerCase())).map(c => ({ type: "Klient", icon: "◎", label: c.name, sub: c.person, color: "text-blue-400", action: () => { setPage("clients"); onClose(); }})),
+    ...reminders.filter(r => r.title?.toLowerCase().includes(query.toLowerCase()) || r.clientName?.toLowerCase().includes(query.toLowerCase())).map(r => ({ type: "Przypomnienie", icon: "◷", label: r.title, sub: r.clientName, color: "text-yellow-400", action: () => { setPage("reminders"); onClose(); }})),
+    ...opportunities.filter(o => o.title?.toLowerCase().includes(query.toLowerCase()) || o.clientName?.toLowerCase().includes(query.toLowerCase())).map(o => ({ type: "Szansa", icon: "◈", label: o.title, sub: o.clientName, color: "text-purple-400", action: () => { setPage("opportunities"); onClose(); }})),
+  ];
+
+  return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-start justify-center pt-20 px-4">
+      <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl w-full max-w-lg">
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-[#1E2D45]">
+          <span className="text-slate-400 text-lg">🔍</span>
+          <input
+            autoFocus
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="Szukaj klientów, przypomnień, szans..."
+            className="flex-1 bg-transparent outline-none text-white text-sm placeholder-slate-500"
+          />
+          <button onClick={onClose} className="text-slate-500 hover:text-white text-lg">✕</button>
+        </div>
+        <div className="max-h-80 overflow-y-auto">
+          {query.length < 2 && (
+            <div className="p-6 text-center text-slate-500 text-sm">Wpisz minimum 2 znaki aby wyszukać</div>
+          )}
+          {query.length >= 2 && results.length === 0 && (
+            <div className="p-6 text-center text-slate-500 text-sm">Brak wyników dla "{query}"</div>
+          )}
+          {results.map((r, i) => (
+            <button key={i} onClick={r.action}
+              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-left border-b border-[#1E2D45] last:border-0">
+              <span className={`text-lg ${r.color}`}>{r.icon}</span>
+              <div className="flex-1 min-w-0">
+                <div className="text-white text-sm font-medium truncate">{r.label}</div>
+                <div className="text-slate-500 text-xs">{r.sub}</div>
+              </div>
+              <span className={`text-xs font-semibold px-2 py-1 rounded-lg bg-white/5 ${r.color}`}>{r.type}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LostClients({ clients }) {
   const lost = clients.filter(c => c.status === "Utracony");
   return (
@@ -779,6 +826,8 @@ export default function App() {
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => { loadAll(); }, []);
 
@@ -917,9 +966,15 @@ export default function App() {
             <button onClick={() => setMenuOpen(true)} className="md:hidden w-9 h-9 bg-[#1E2D45] rounded-xl flex items-center justify-center text-white text-lg">☰</button>
             <div className="text-white font-bold text-base">{pageLabels[page]}</div>
           </div>
-          <div className="w-9 h-9 bg-yellow-500/20 border border-yellow-500/30 rounded-xl flex items-center justify-center relative cursor-pointer">
-            🔔
-            {pendingCount>0 && <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />}
+          <div className="flex items-center gap-2">
+            <button onClick={() => setSearchOpen(true)} className="bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-3 py-2 text-slate-400 text-sm flex items-center gap-2 hover:border-slate-600 transition-colors">
+              <span>🔍</span>
+              <span className="hidden md:block">Szukaj...</span>
+            </button>
+            <div className="w-9 h-9 bg-yellow-500/20 border border-yellow-500/30 rounded-xl flex items-center justify-center relative cursor-pointer">
+              🔔
+              {pendingCount>0 && <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />}
+            </div>
           </div>
         </div>
         <div className="flex-1 overflow-auto p-4 pb-20 md:pb-6">
