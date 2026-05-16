@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
+import { Bar } from "react-chartjs-2";
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from "chart.js";
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const statusColors = {
   "Aktywny":    "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30",
@@ -262,7 +265,36 @@ function AddOpportunityModal({ onClose, onAdd, clients }) {
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl p-5">
+          <div className="text-white font-bold text-sm mb-4">📈 Aktywność — ostatnie wpisy</div>
+          <Bar
+            data={{
+              labels: ["Nowa", "Kontakt", "Oferta", "Negocjacje", "Wygrana", "Utracona"],
+              datasets: [{
+                label: "Szanse sprzedaży",
+                data: [
+                  opportunities.filter(o=>o.stage==="Nowa").length,
+                  opportunities.filter(o=>o.stage==="Kontakt").length,
+                  opportunities.filter(o=>o.stage==="Oferta").length,
+                  opportunities.filter(o=>o.stage==="Negocjacje").length,
+                  opportunities.filter(o=>o.stage==="Wygrana").length,
+                  opportunities.filter(o=>o.stage==="Utracona").length,
+                ],
+                backgroundColor: ["#3B7EF6", "#F59E0B", "#10B981", "#8B5CF6"],
+                borderRadius: 8,
+              }]
+            }}
+            options={{
+              responsive: true,
+              plugins: { legend: { display: false } },
+              scales: {
+                x: { ticks: { color: "#64748B" }, grid: { color: "#1E2D45" } },
+                y: { ticks: { color: "#64748B" }, grid: { color: "#1E2D45" }, beginAtZero: true },
+              }
+            }}
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
         <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl p-5">
           <div className="text-white font-bold text-sm mb-4">🏆 Ranking klientów</div>
           {clients.slice(0,5).map((c,i) => (
