@@ -689,8 +689,20 @@ export default function App() {
             {pendingCount>0 && <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />}
           </div>
         </div>
-        <div className="flex-1 overflow-auto p-4 pb-24 md:pb-6">
+        <div className="flex-1 overflow-auto p-4 pb-20 md:pb-6">
           {pages[page]}
+        </div>
+        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#141929] border-t border-[#1E2D45] flex z-50">
+          {navItems.map(item => (
+            <button key={item.id} onClick={() => setPage(item.id)}
+              className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 relative ${page===item.id ? "text-blue-400" : "text-slate-500"}`}>
+              <span className="text-xl">{item.icon}</span>
+              <span className="text-xs">{item.label}</span>
+              {item.id==="reminders" && pendingCount>0 && (
+                <span className="absolute top-1 right-4 bg-red-500 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">{pendingCount}</span>
+              )}
+            </button>
+          ))}
         </div>
       </div>
     </div>
