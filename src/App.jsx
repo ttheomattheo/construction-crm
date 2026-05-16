@@ -232,7 +232,7 @@ function AddOpportunityModal({ onClose, onAdd, clients }) {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <div className="text-slate-400 text-sm mb-1">Piątek, 16 maja 2026</div>
+        <div className="text-slate-400 text-sm mb-1">{new Date().toLocaleDateString('pl-PL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
         <div className="text-white text-2xl font-bold">Dzień dobry 👋</div>
       </div>
       <div className="flex gap-4 flex-wrap">
