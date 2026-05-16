@@ -302,7 +302,7 @@ function AddOpportunityModal({ onClose, onAdd, clients }) {
   );
 }
 
-function Clients({ clients, setClients }) {
+function Clients({ clients, setClients, loadActivities, addActivity }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [selected, setSelected] = useState(null);
@@ -785,7 +785,7 @@ export default function App() {
 
   const pages = {
     dashboard: <Dashboard clients={clients} reminders={reminders} opportunities={opportunities} />,
-    clients: <Clients clients={clients} setClients={setClients} />,
+    clients: <Clients clients={clients} setClients={setClients} loadActivities={loadActivities} addActivity={addActivity} />,
     reminders: <Reminders reminders={reminders} setReminders={setReminders} clients={clients} />,
     opportunities: <Opportunities opportunities={opportunities} setOpportunities={setOpportunities} clients={clients} />,
     lost: <LostClients clients={clients} />,
