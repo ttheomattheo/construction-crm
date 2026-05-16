@@ -308,6 +308,7 @@ function Clients({ clients, setClients }) {
   const [selected, setSelected] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
   const [editClient, setEditClient] = useState(null);
+  const [showHistory, setShowHistory] = useState(null);
   const filtered = clients.filter(c => {
     const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.person.toLowerCase().includes(search.toLowerCase());
     const matchFilter = filter === "all" || c.status === filter;
@@ -317,6 +318,7 @@ function Clients({ clients, setClients }) {
     <>
       {showAdd && <ClientModal onClose={() => setShowAdd(false)} onSave={(c) => setClients(p => [...p, c])} />}
       {editClient && <ClientModal onClose={() => setEditClient(null)} onSave={(c) => { setClients(p => p.map(x => x.id === c.id ? c : x)); setSelected(c); setEditClient(null); }} initialData={editClient} />}
+      {showHistory && <ActivityModal client={showHistory} onClose={() => setShowHistory(null)} loadActivities={loadActivities} addActivity={addActivity} />}
       <div className="flex gap-4 h-full">
         <div className="flex flex-col gap-3 flex-1">
           <div className="flex gap-3">
@@ -403,6 +405,9 @@ function Clients({ clients, setClients }) {
               </div>
               <button onClick={() => setEditClient(selected)} className="w-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-semibold text-sm py-2.5 rounded-xl hover:bg-blue-500/20 transition-colors">
                 ✏️ Edytuj klienta
+              </button>
+              <button onClick={() => setShowHistory(selected)} className="w-full bg-purple-500/10 border border-purple-500/20 text-purple-400 font-semibold text-sm py-2.5 rounded-xl hover:bg-purple-500/20 transition-colors">
+                📋 Historia aktywności
               </button>
               <button onClick={async () => { 
                 if(window.confirm("Czy na pewno chcesz usunąć tego klienta?")) { 
@@ -596,6 +601,117 @@ function Reminders({ reminders, setReminders, clients }) {
   );
 }
 
+function ActivityModal({ client, onClose, loadActivities, addActivity }) {
+  const [activities, setActivities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({
+    type: "Kontakt", title: "", description: "", value: "", date: new Date().toISOString().slice(0,16)
+  });
+
+  useEffect(() => {
+    loadActivities(client.id).then(data => {
+      setActivities(data);
+      setLoading(false);
+    });
+  }, [client.id]);
+
+  const typeConfig = {
+    "Kontakt":  { icon: "📞", color: "text-blue-400",   bg: "bg-blue-500/20" },
+    "Oferta":   { icon: "📋", color: "text-yellow-400", bg: "bg-yellow-500/20" },
+    "Dostawa":  { icon: "🚛", color: "text-emerald-400",bg: "bg-emerald-500/20" },
+    "Zapytanie":{ icon: "❓", color: "text-purple-400", bg: "bg-purple-500/20" },
+  };
+
+  const handleAdd = async () => {
+    if (!form.title) { alert("Wpisz tytuł"); return; }
+    const result = await addActivity(client.id, form);
+    if (result) {
+      setActivities(p => [result, ...p]);
+      setForm({ type: "Kontakt", title: "", description: "", value: "", date: new Date().toISOString().slice(0,16) });
+      setShowForm(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between p-5 border-b border-[#1E2D45]">
+          <div>
+            <div className="text-white font-bold text-lg">📋 Historia aktywności</div>
+            <div className="text-slate-400 text-xs mt-0.5">{client.name}</div>
+          </div>
+          <button onClick={onClose} className="text-slate-500 hover:text-white text-xl w-8 h-8 flex items-center justify-center">✕</button>
+        </div>
+
+        {showForm && (
+          <div className="p-4 border-b border-[#1E2D45] flex flex-col gap-3 bg-[#0B0F1A]">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1">
+                <label className="text-slate-400 text-xs uppercase tracking-wider">Typ</label>
+                <select value={form.type} onChange={e => setForm(f=>({...f, type: e.target.value}))}
+                  className="bg-[#141929] border border-[#1E2D45] rounded-xl px-3 py-2 text-white text-sm outline-none">
+                  {Object.keys(typeConfig).map(t => <option key={t} value={t}>{typeConfig[t].icon} {t}</option>)}
+                </select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-slate-400 text-xs uppercase tracking-wider">Data</label>
+                <input type="datetime-local" value={form.date} onChange={e => setForm(f=>({...f, date: e.target.value}))}
+                  className="bg-[#141929] border border-[#1E2D45] rounded-xl px-3 py-2 text-white text-sm outline-none" />
+              </div>
+            </div>
+            <input placeholder="Tytuł (np. Wysłano ofertę na izolacje)" value={form.title} onChange={e => setForm(f=>({...f, title: e.target.value}))}
+              className="bg-[#141929] border border-[#1E2D45] rounded-xl px-3 py-2 text-white text-sm outline-none placeholder-slate-600" />
+            <textarea placeholder="Opis (opcjonalnie)" value={form.description} onChange={e => setForm(f=>({...f, description: e.target.value}))} rows={2}
+              className="bg-[#141929] border border-[#1E2D45] rounded-xl px-3 py-2 text-white text-sm outline-none placeholder-slate-600 resize-none" />
+            <input placeholder="Wartość (zł) — opcjonalnie" type="number" value={form.value} onChange={e => setForm(f=>({...f, value: e.target.value}))}
+              className="bg-[#141929] border border-[#1E2D45] rounded-xl px-3 py-2 text-white text-sm outline-none placeholder-slate-600" />
+            <div className="flex gap-2">
+              <button onClick={() => setShowForm(false)} className="flex-1 bg-[#0B0F1A] border border-[#1E2D45] text-slate-400 text-sm py-2 rounded-xl">Anuluj</button>
+              <button onClick={handleAdd} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-sm py-2 rounded-xl font-semibold">✓ Zapisz</button>
+            </div>
+          </div>
+        )}
+
+        <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+          {!showForm && (
+            <button onClick={() => setShowForm(true)} className="w-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm py-2.5 rounded-xl font-semibold hover:bg-blue-500/20 transition-colors">
+              + Dodaj aktywność
+            </button>
+          )}
+          {loading && <div className="text-slate-400 text-sm text-center py-8">Ładowanie...</div>}
+          {!loading && activities.length === 0 && (
+            <div className="text-center py-8">
+              <div className="text-4xl mb-3">📋</div>
+              <div className="text-white font-semibold">Brak historii</div>
+              <div className="text-slate-400 text-sm mt-1">Dodaj pierwszą aktywność</div>
+            </div>
+          )}
+          {activities.map(a => {
+            const tc = typeConfig[a.type] || typeConfig["Kontakt"];
+            return (
+              <div key={a.id} className="bg-[#0B0F1A] border border-[#1E2D45] rounded-xl p-3 flex gap-3">
+                <div className={`w-10 h-10 rounded-xl ${tc.bg} flex items-center justify-center text-xl flex-shrink-0`}>{tc.icon}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <span className="text-white font-semibold text-sm">{a.title}</span>
+                    {a.value > 0 && <span className="text-emerald-400 font-bold text-sm flex-shrink-0">{Number(a.value).toLocaleString()} zł</span>}
+                  </div>
+                  {a.description && <div className="text-slate-400 text-xs mb-1">{a.description}</div>}
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs font-semibold ${tc.color}`}>{tc.icon} {a.type}</span>
+                    <span className="text-slate-600 text-xs">{new Date(a.date).toLocaleDateString('pl-PL', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'})}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LostClients({ clients }) {
   const lost = clients.filter(c => c.status === "Utracony");
   return (
@@ -645,6 +761,24 @@ export default function App() {
     if (r.data) setReminders(r.data.map(x => ({...x, clientName: x.client_name})));
     if (o.data) setOpportunities(o.data.map(x => ({...x, clientName: x.client_name})));
     setLoading(false);
+  }
+
+  async function loadActivities(clientId) {
+    const { data } = await supabase.from("activities").select("*").eq("client_id", clientId).order("date", { ascending: false });
+    return data || [];
+  }
+
+  async function addActivity(clientId, activity) {
+    const { data, error } = await supabase.from("activities").insert([{
+      client_id: clientId,
+      type: activity.type,
+      title: activity.title,
+      description: activity.description,
+      value: activity.value || 0,
+      date: activity.date || new Date().toISOString(),
+    }]).select();
+    if (error) { alert("Błąd zapisu: " + error.message); return null; }
+    return data?.[0];
   }
 
   const pendingCount = reminders.filter(r => !r.done).length;
