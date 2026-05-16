@@ -928,6 +928,15 @@ export default function App() {
 
   return (
     <div className="flex flex-col-reverse md:flex-row h-screen bg-[#0B0F1A] font-sans overflow-hidden">
+      {searchOpen && (
+        <GlobalSearch
+          clients={clients}
+          reminders={reminders}
+          opportunities={opportunities}
+          onClose={() => setSearchOpen(false)}
+          setPage={setPage}
+        />
+      )}
       <div className="hidden md:flex w-52 bg-[#141929] border-r border-[#1E2D45] flex-col py-6 flex-shrink-0">
         <div className="px-5 pb-6 border-b border-[#1E2D45]">
           <div className="flex items-center gap-3">
