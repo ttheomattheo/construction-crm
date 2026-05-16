@@ -18,6 +18,15 @@ const initialReminders = [
   { id: 6, clientName: "Hydrotech Polska", title: "Wysłać umowę ramową", date: "2026-05-14", time: "12:00", priority: "Wysoki", type: "Email", done: true },
 ];
 
+const initialOpportunities = [
+  { id: 1, clientName: "Budmax Sp. z o.o.", title: "Izolacje termiczne — blok A", value: 34000, stage: "Oferta", probability: 70, date: "2026-04-01", notes: "Czeka na akceptację ceny" },
+  { id: 2, clientName: "Hydrotech Polska", title: "Rury stalowe kontrakt Q3", value: 18500, stage: "Negocjacje", probability: 85, date: "2026-03-15", notes: "Zostało uzgodnić termin dostawy" },
+  { id: 3, clientName: "Invest-Bud Kraków", title: "Kompletne wykończenia budynku", value: 92000, stage: "Kontakt", probability: 30, date: "2026-05-01", notes: "Pierwszy kontakt, duży potencjał" },
+  { id: 4, clientName: "DachPol SA", title: "Dachówki — projekt Kowalski", value: 27400, stage: "Oferta", probability: 60, date: "2026-04-20", notes: "Oferta wysłana, czekam na odpowiedź" },
+  { id: 5, clientName: "Stal-Beton Łódź", title: "Beton B30 kontrakt roczny", value: 56000, stage: "Negocjacje", probability: 75, date: "2026-03-01", notes: "Negocjacje w toku" },
+  { id: 6, clientName: "Prefabet Wrocław", title: "Prefabrykaty — osiedle Słoneczne", value: 41000, stage: "Nowa", probability: 20, date: "2026-05-10", notes: "Właśnie zidentyfikowana szansa" },
+];
+
 const statusColors = {
   "Aktywny":    "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30",
   "Prospekt":   "bg-blue-500/20 text-blue-400 border border-blue-500/30",
@@ -38,6 +47,17 @@ const priorityConfig = {
 
 const typeIcons = {
   "Telefon": "📞", "Email": "📧", "Wizyta": "🚗", "Spotkanie": "🤝", "WhatsApp": "💬",
+};
+
+const stages = ["Nowa", "Kontakt", "Oferta", "Negocjacje", "Wygrana", "Utracona"];
+
+const stageConfig = {
+  "Nowa":       { color: "text-blue-400",    bg: "bg-blue-500/20",    border: "border-blue-500/30",    dot: "bg-blue-500" },
+  "Kontakt":    { color: "text-purple-400",  bg: "bg-purple-500/20",  border: "border-purple-500/30",  dot: "bg-purple-500" },
+  "Oferta":     { color: "text-yellow-400",  bg: "bg-yellow-500/20",  border: "border-yellow-500/30",  dot: "bg-yellow-500" },
+  "Negocjacje": { color: "text-orange-400",  bg: "bg-orange-500/20",  border: "border-orange-500/30",  dot: "bg-orange-500" },
+  "Wygrana":    { color: "text-emerald-400", bg: "bg-emerald-500/20", border: "border-emerald-500/30", dot: "bg-emerald-500" },
+  "Utracona":   { color: "text-red-400",     bg: "bg-red-500/20",     border: "border-red-500/30",     dot: "bg-red-500" },
 };
 
 const navItems = [
@@ -165,8 +185,48 @@ function AddReminderModal({ onClose, onAdd, clients }) {
   );
 }
 
-function Dashboard({ clients, reminders }) {
+function AddOpportunityModal({ onClose, onAdd, clients }) {
+  const [form, setForm] = useState({
+    clientName: clients[0]?.name || "",
+    title: "", value: "", stage: "Nowa",
+    probability: 20, notes: "",
+  });
+  const handleChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+  const handleSubmit = () => {
+    if (!form.title || !form.value) { alert("Wypełnij temat i wartość szansy"); return; }
+    onAdd({ ...form, id: Date.now(), value: Number(form.value), date: new Date().toISOString().split("T")[0] });
+    onClose();
+  };
+  return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl w-full max-w-lg">
+        <div className="flex items-center justify-between p-5 border-b border-[#1E2D45]">
+          <div>
+            <div className="text-white font-bold text-lg">💡 Nowa szansa sprzedaży</div>
+            <div className="text-slate-400 text-xs mt-0.5">Dodaj szansę do pipeline</div>
+          </div>
+          <button onClick={onClose} className="text-slate-500 hover:text-white text-xl w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/5">✕</button>
+        </div>
+        <div className="p-5 flex flex-col gap-4">
+          <Field label="Klient" name="clientName" value={form.clientName} onChange={handleChange} options={clients.map(c => c.name)} />
+          <Field label="Tytuł szansy" name="title" value={form.title} onChange={handleChange} required />
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Wartość (zł)" name="value" value={form.value} onChange={handleChange} type="number" required />
+            <Field label="Prawdopodobieństwo %" name="probability" value={form.probability} onChange={handleChange} type="number" />
+          </div>
+          <Field label="Etap" name="stage" value={form.stage} onChange={handleChange} options={stages} />
+          <Field label="Notatki" name="notes" value={form.notes} onChange={handleChange} type="textarea" />
+        </div>
+        <div className="p-5 border-t border-[#1E2D45] flex gap-3">
+          <button onClick={onClose} className="flex-1 bg-[#0B0F1A] border border-[#1E2D45] text-slate-400 font-semibold text-sm py-3 rounded-xl hover:text-white transition-colors">Anuluj</button>
+          <button onClick={handleSubmit} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm py-3 rounded-xl transition-colors">✓ Zapisz szansę</button>
+        </div>
+      </div>
+    </div>
+  );
+}function Dashboard({ clients, reminders, opportunities }) {
   const pending = reminders.filter(r => !r.done);
+  const totalPipeline = opportunities.filter(o => !["Wygrana","Utracona"].includes(o.stage)).reduce((s,o) => s + o.value, 0);
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -176,8 +236,8 @@ function Dashboard({ clients, reminders }) {
       <div className="flex gap-4 flex-wrap">
         {[
           { icon: "👥", label: "Klienci", value: clients.length, sub: "w bazie", color: "bg-blue-500" },
-          { icon: "✅", label: "Aktywni", value: clients.filter(c=>c.status==="Aktywny").length, sub: "aktywnych", color: "bg-emerald-500" },
           { icon: "🔔", label: "Przypomnienia", value: pending.length, sub: "oczekujących", color: "bg-yellow-500" },
+          { icon: "💡", label: "Pipeline", value: `${(totalPipeline/1000).toFixed(0)}k zł`, sub: "wartość szans", color: "bg-purple-500" },
           { icon: "🔴", label: "Pilne", value: pending.filter(r=>r.priority==="Wysoki").length, sub: "wysokie priorytety", color: "bg-red-500" },
         ].map((card) => (
           <div key={card.label} className="bg-[#141929] border border-[#1E2D45] rounded-2xl p-5 flex-1 min-w-40 relative overflow-hidden">
@@ -205,17 +265,20 @@ function Dashboard({ clients, reminders }) {
           ))}
         </div>
         <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl p-5">
-          <div className="text-white font-bold text-sm mb-4">🔔 Najbliższe przypomnienia</div>
-          {pending.slice(0,4).map((r) => {
-            const pr = priorityConfig[r.priority];
+          <div className="text-white font-bold text-sm mb-4">💡 Top szanse sprzedaży</div>
+          {opportunities.filter(o=>!["Wygrana","Utracona"].includes(o.stage)).slice(0,4).map((o) => {
+            const sc = stageConfig[o.stage];
             return (
-              <div key={r.id} className="flex gap-3 mb-3 items-start">
-                <div className={`w-2 h-2 rounded-full ${pr.dot} mt-1.5 flex-shrink-0`} />
-                <div className="flex-1">
-                  <div className="text-white text-xs font-medium">{r.title}</div>
-                  <div className="text-slate-500 text-xs mt-0.5">{r.clientName} · {r.date} {r.time}</div>
+              <div key={o.id} className="flex items-center gap-3 mb-3">
+                <div className={`w-2 h-2 rounded-full ${sc.dot} flex-shrink-0`} />
+                <div className="flex-1 min-w-0">
+                  <div className="text-white text-xs font-medium truncate">{o.title}</div>
+                  <div className="text-slate-500 text-xs">{o.clientName}</div>
                 </div>
-                <span className="text-xs">{typeIcons[r.type]}</span>
+                <div className="text-right flex-shrink-0">
+                  <div className="text-emerald-400 font-bold text-xs">{o.value.toLocaleString()} zł</div>
+                  <div className="text-slate-500 text-xs">{o.probability}%</div>
+                </div>
               </div>
             );
           })}
@@ -223,18 +286,18 @@ function Dashboard({ clients, reminders }) {
       </div>
     </div>
   );
-}function Clients({ clients, setClients, reminders, setReminders }) {
+}
+
+function Clients({ clients, setClients }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [selected, setSelected] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
-
   const filtered = clients.filter(c => {
     const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.person.toLowerCase().includes(search.toLowerCase());
     const matchFilter = filter === "all" || c.status === filter;
     return matchSearch && matchFilter;
   });
-
   return (
     <>
       {showAdd && <AddClientModal onClose={() => setShowAdd(false)} onAdd={(c) => setClients(p => [...p, c])} />}
@@ -276,13 +339,6 @@ function Dashboard({ clients, reminders }) {
                 <span className={`text-xs font-semibold px-2 py-1 rounded-lg ${statusColors[c.status]}`}>{c.status}</span>
               </div>
             ))}
-            {filtered.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-16 gap-3">
-                <div className="text-4xl">🔍</div>
-                <div className="text-white font-semibold">Brak klientów</div>
-                <div className="text-slate-400 text-sm">Zmień filtry lub dodaj nowego klienta</div>
-              </div>
-            )}
           </div>
         </div>
         {selected && (
@@ -319,11 +375,11 @@ function Dashboard({ clients, reminders }) {
                 </div>
               )}
               <div className="flex gap-2">
-                <button className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm py-2.5 rounded-xl transition-colors">📞 Zadzwoń</button>
+                <button className="flex-1 bg-blue-600 text-white font-semibold text-sm py-2.5 rounded-xl">📞 Zadzwoń</button>
                 <button className="flex-1 bg-[#0B0F1A] border border-[#1E2D45] text-blue-400 font-semibold text-sm py-2.5 rounded-xl">+ Przyp.</button>
               </div>
               <button onClick={() => { if(window.confirm("Usunąć klienta?")) { setClients(p=>p.filter(c=>c.id!==selected.id)); setSelected(null); }}}
-                className="w-full bg-red-500/10 border border-red-500/20 text-red-400 font-semibold text-sm py-2.5 rounded-xl hover:bg-red-500/20 transition-colors">
+                className="w-full bg-red-500/10 border border-red-500/20 text-red-400 font-semibold text-sm py-2.5 rounded-xl">
                 🗑️ Usuń klienta
               </button>
             </div>
@@ -337,19 +393,15 @@ function Dashboard({ clients, reminders }) {
 function Reminders({ reminders, setReminders, clients }) {
   const [showAdd, setShowAdd] = useState(false);
   const [filterTab, setFilterTab] = useState("all");
-
   const today = "2026-05-16";
-
   const filtered = reminders.filter(r => {
     if (filterTab === "today") return r.date === today && !r.done;
     if (filterTab === "pending") return !r.done;
     if (filterTab === "done") return r.done;
     return true;
   });
-
   const toggleDone = (id) => setReminders(p => p.map(r => r.id === id ? {...r, done: !r.done} : r));
   const deleteReminder = (id) => setReminders(p => p.filter(r => r.id !== id));
-
   return (
     <>
       {showAdd && <AddReminderModal onClose={() => setShowAdd(false)} onAdd={(r) => setReminders(p => [...p, r])} clients={clients} />}
@@ -361,32 +413,23 @@ function Reminders({ reminders, setReminders, clients }) {
           </div>
           <button onClick={() => setShowAdd(true)} className="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors">+ Nowe</button>
         </div>
-
         <div className="flex gap-2">
           {[["all","Wszystkie"],["today","Dziś"],["pending","Oczekujące"],["done","Wykonane"]].map(([val,label]) => (
             <button key={val} onClick={() => setFilterTab(val)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${filterTab===val ? "bg-blue-600 text-white" : "bg-[#141929] border border-[#1E2D45] text-slate-400 hover:text-white"}`}>
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${filterTab===val ? "bg-blue-600 text-white" : "bg-[#141929] border border-[#1E2D45] text-slate-400"}`}>
               {label}
-              {val === "today" && <span className="ml-1.5 bg-red-500 text-white text-xs font-black px-1.5 py-0.5 rounded-full">{reminders.filter(r=>r.date===today&&!r.done).length}</span>}
+              {val==="today" && <span className="ml-1.5 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">{reminders.filter(r=>r.date===today&&!r.done).length}</span>}
             </button>
           ))}
         </div>
-
         <div className="flex flex-col gap-3 overflow-y-auto flex-1">
-          {filtered.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-16 gap-3">
-              <div className="text-4xl">✅</div>
-              <div className="text-white font-semibold">Brak przypomnień</div>
-              <div className="text-slate-400 text-sm">Wszystko zrobione lub dodaj nowe</div>
-            </div>
-          )}
           {filtered.map(r => {
             const pr = priorityConfig[r.priority];
             return (
-              <div key={r.id} className={`bg-[#141929] border border-[#1E2D45] rounded-xl p-4 flex items-center gap-4 ${r.done ? "opacity-50" : ""}`}>
+              <div key={r.id} className={`bg-[#141929] border border-[#1E2D45] rounded-xl p-4 flex items-center gap-4 ${r.done?"opacity-50":""}`}>
                 <div className={`w-1 h-12 rounded-full ${pr.dot} flex-shrink-0`} />
                 <div className="flex-1 min-w-0">
-                  <div className={`font-semibold text-sm mb-1 ${r.done ? "line-through text-slate-500" : "text-white"}`}>{r.title}</div>
+                  <div className={`font-semibold text-sm mb-1 ${r.done?"line-through text-slate-500":"text-white"}`}>{r.title}</div>
                   <div className="text-slate-400 text-xs">{r.clientName}</div>
                   <div className="flex items-center gap-3 mt-2">
                     <span className="text-slate-500 text-xs">📅 {r.date} {r.time}</span>
@@ -396,13 +439,10 @@ function Reminders({ reminders, setReminders, clients }) {
                 </div>
                 <div className="flex gap-2 flex-shrink-0">
                   <button onClick={() => toggleDone(r.id)}
-                    className={`w-9 h-9 rounded-xl font-bold text-sm transition-colors ${r.done ? "bg-slate-700 text-slate-400 hover:bg-slate-600" : "bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/30"}`}>
-                    {r.done ? "↩" : "✓"}
+                    className={`w-9 h-9 rounded-xl font-bold text-sm transition-colors ${r.done?"bg-slate-700 text-slate-400":"bg-emerald-500/20 border border-emerald-500/30 text-emerald-400"}`}>
+                    {r.done?"↩":"✓"}
                   </button>
-                  <button onClick={() => deleteReminder(r.id)}
-                    className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors text-sm">
-                    🗑
-                  </button>
+                  <button onClick={() => deleteReminder(r.id)} className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">🗑</button>
                 </div>
               </div>
             );
@@ -411,14 +451,130 @@ function Reminders({ reminders, setReminders, clients }) {
       </div>
     </>
   );
+}function Opportunities({ opportunities, setOpportunities, clients }) {
+  const [showAdd, setShowAdd] = useState(false);
+  const [selected, setSelected] = useState(null);
+  const activeStages = ["Nowa", "Kontakt", "Oferta", "Negocjacje"];
+  const totalPipeline = opportunities.filter(o => activeStages.includes(o.stage)).reduce((s,o) => s + o.value, 0);
+  const totalWeighted = opportunities.filter(o => activeStages.includes(o.stage)).reduce((s,o) => s + o.value * o.probability / 100, 0);
+
+  const changeStage = (id, stage) => setOpportunities(p => p.map(o => o.id === id ? {...o, stage} : o));
+  const deleteOpp = (id) => { setOpportunities(p => p.filter(o => o.id !== id)); setSelected(null); };
+
+  return (
+    <>
+      {showAdd && <AddOpportunityModal onClose={() => setShowAdd(false)} onAdd={(o) => setOpportunities(p => [...p, o])} clients={clients} />}
+      <div className="flex flex-col gap-4 h-full">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-white font-bold text-lg">Szanse sprzedaży</div>
+            <div className="text-slate-400 text-xs mt-0.5">{opportunities.filter(o=>activeStages.includes(o.stage)).length} aktywnych szans</div>
+          </div>
+          <button onClick={() => setShowAdd(true)} className="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors">+ Nowa szansa</button>
+        </div>
+
+        <div className="flex gap-3">
+          {[
+            { label: "Wartość pipeline", value: `${(totalPipeline/1000).toFixed(0)}k zł`, color: "text-blue-400" },
+            { label: "Wartość ważona", value: `${(totalWeighted/1000).toFixed(0)}k zł`, color: "text-purple-400" },
+            { label: "Wygrane", value: opportunities.filter(o=>o.stage==="Wygrana").length, color: "text-emerald-400" },
+            { label: "Utracone", value: opportunities.filter(o=>o.stage==="Utracona").length, color: "text-red-400" },
+          ].map(card => (
+            <div key={card.label} className="bg-[#141929] border border-[#1E2D45] rounded-xl p-3 flex-1 text-center">
+              <div className="text-slate-500 text-xs mb-1">{card.label}</div>
+              <div className={`font-bold text-lg ${card.color}`}>{card.value}</div>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex gap-4 flex-1 overflow-x-auto pb-2">
+          {activeStages.map(stage => {
+            const sc = stageConfig[stage];
+            const stageOpps = opportunities.filter(o => o.stage === stage);
+            const stageTotal = stageOpps.reduce((s,o) => s + o.value, 0);
+            return (
+              <div key={stage} className="min-w-52 flex-1 flex flex-col gap-3">
+                <div className="bg-[#141929] border border-[#1E2D45] rounded-xl p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className={`w-2 h-2 rounded-full ${sc.dot}`} />
+                    <span className={`font-bold text-sm ${sc.color}`}>{stage}</span>
+                    <span className="ml-auto bg-[#0B0F1A] text-slate-400 text-xs px-2 py-0.5 rounded-lg">{stageOpps.length}</span>
+                  </div>
+                  <div className="text-slate-500 text-xs">{stageTotal.toLocaleString()} zł</div>
+                </div>
+                <div className="flex flex-col gap-2 overflow-y-auto flex-1">
+                  {stageOpps.map(o => (
+                    <div key={o.id} onClick={() => setSelected(selected?.id===o.id ? null : o)}
+                      className={`bg-[#141929] border rounded-xl p-3 cursor-pointer transition-all ${selected?.id===o.id ? "border-blue-500/60 bg-blue-500/10" : "border-[#1E2D45] hover:border-slate-600"}`}>
+                      <div className="text-white font-semibold text-xs mb-1 leading-tight">{o.title}</div>
+                      <div className="text-slate-400 text-xs mb-2">{o.clientName}</div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-emerald-400 font-bold text-xs">{o.value.toLocaleString()} zł</span>
+                        <span className="text-slate-500 text-xs">{o.probability}%</span>
+                      </div>
+                      <div className="h-1 bg-[#0B0F1A] rounded mt-2">
+                        <div className={`h-full ${sc.dot} rounded`} style={{width:`${o.probability}%`}} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {selected && (
+          <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl p-4 flex gap-4 items-start">
+            <div className="flex-1">
+              <div className="text-white font-bold text-sm mb-1">{selected.title}</div>
+              <div className="text-slate-400 text-xs mb-3">{selected.clientName} · Dodano: {selected.date}</div>
+              {selected.notes && <div className="text-slate-300 text-xs leading-relaxed mb-3">{selected.notes}</div>}
+              <div className="flex gap-2 flex-wrap">
+                <span className="text-xs text-slate-500">Zmień etap:</span>
+                {stages.map(s => (
+                  <button key={s} onClick={() => changeStage(selected.id, s)}
+                    className={`text-xs px-2 py-1 rounded-lg font-semibold transition-colors ${selected.stage===s ? `${stageConfig[s].bg} ${stageConfig[s].color} border ${stageConfig[s].border}` : "bg-[#0B0F1A] text-slate-400 hover:text-white"}`}>
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="text-right flex-shrink-0">
+              <div className="text-emerald-400 font-bold text-lg">{selected.value.toLocaleString()} zł</div>
+              <div className="text-slate-400 text-xs mb-3">{selected.probability}% prawdopodobieństwo</div>
+              <button onClick={() => deleteOpp(selected.id)} className="text-xs bg-red-500/10 border border-red-500/20 text-red-400 px-3 py-1.5 rounded-lg">🗑 Usuń</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  );
 }
 
-function ComingSoon({ title, icon }) {
+function LostClients({ clients }) {
+  const lost = clients.filter(c => c.status === "Utracony");
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-4">
-      <div className="text-6xl">{icon}</div>
-      <div className="text-white font-bold text-xl">{title}</div>
-      <div className="text-slate-400 text-sm">Ten moduł budujemy w następnym etapie</div>
+    <div className="flex flex-col gap-4">
+      <div className="text-white font-bold text-lg">Utraceni klienci</div>
+      {lost.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 gap-3">
+          <div className="text-4xl">🎉</div>
+          <div className="text-white font-semibold">Brak utraconych klientów!</div>
+          <div className="text-slate-400 text-sm">Świetna robota!</div>
+        </div>
+      ) : (
+        lost.map(c => (
+          <div key={c.id} className="bg-[#141929] border border-red-500/20 rounded-xl p-4 flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center text-red-400 font-bold flex-shrink-0">{c.name.charAt(0)}</div>
+            <div className="flex-1">
+              <div className="text-white font-semibold text-sm">{c.name}</div>
+              <div className="text-slate-400 text-xs">{c.person} · {c.city}</div>
+            </div>
+            <div className="text-red-400 font-bold text-sm">{c.revenue}</div>
+            <button className="text-xs bg-blue-500/20 border border-blue-500/30 text-blue-400 px-3 py-1.5 rounded-lg">Odzyskaj</button>
+          </div>
+        ))
+      )}
     </div>
   );
 }
@@ -427,15 +583,15 @@ export default function App() {
   const [page, setPage] = useState("dashboard");
   const [clients, setClients] = useState(initialClients);
   const [reminders, setReminders] = useState(initialReminders);
-
+  const [opportunities, setOpportunities] = useState(initialOpportunities);
   const pendingCount = reminders.filter(r => !r.done).length;
 
   const pages = {
-    dashboard: <Dashboard clients={clients} reminders={reminders} />,
-    clients: <Clients clients={clients} setClients={setClients} reminders={reminders} setReminders={setReminders} />,
+    dashboard: <Dashboard clients={clients} reminders={reminders} opportunities={opportunities} />,
+    clients: <Clients clients={clients} setClients={setClients} />,
     reminders: <Reminders reminders={reminders} setReminders={setReminders} clients={clients} />,
-    opportunities: <ComingSoon title="Szanse sprzedaży" icon="💡" />,
-    lost: <ComingSoon title="Utraceni klienci" icon="⊗" />,
+    opportunities: <Opportunities opportunities={opportunities} setOpportunities={setOpportunities} clients={clients} />,
+    lost: <LostClients clients={clients} />,
   };
 
   const pageLabels = {
@@ -461,7 +617,7 @@ export default function App() {
               className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl mb-1 text-sm font-medium transition-all ${page===item.id ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" : "text-slate-400 hover:text-white hover:bg-white/5"}`}>
               <span>{item.icon}</span>
               {item.label}
-              {item.id === "reminders" && pendingCount > 0 && (
+              {item.id==="reminders" && pendingCount>0 && (
                 <span className="ml-auto bg-red-500 text-white text-xs font-black w-5 h-5 rounded-full flex items-center justify-center">{pendingCount}</span>
               )}
             </button>
@@ -482,7 +638,7 @@ export default function App() {
           <div className="text-white font-bold text-base">{pageLabels[page]}</div>
           <div className="w-9 h-9 bg-yellow-500/20 border border-yellow-500/30 rounded-xl flex items-center justify-center relative cursor-pointer">
             🔔
-            {pendingCount > 0 && <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />}
+            {pendingCount>0 && <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />}
           </div>
         </div>
         <div className="flex-1 overflow-auto p-6">
