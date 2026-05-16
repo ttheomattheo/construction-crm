@@ -66,8 +66,9 @@ function Field({ label, name, value, onChange, type = "text", options, required 
   );
 }
 
-function AddClientModal({ onClose, onAdd }) {
-  const [form, setForm] = useState({
+function ClientModal({ onClose, onSave, initialData = null }) {
+  const isEdit = !!initialData;
+  const [form, setForm] = useState(initialData || {
     name: "", person: "", phone: "", email: "",
     city: "", status: "Prospekt", potential: "Średni",
     revenue: "0 zł", margin: "0%", notes: "",
@@ -78,15 +79,26 @@ function AddClientModal({ onClose, onAdd }) {
       alert("Wypełnij wymagane pola: Firma, Osoba kontaktowa, Telefon");
       return;
     }
-    const { data, error } = await supabase.from("clients").insert([{
-      name: form.name, person: form.person, phone: form.phone,
-      email: form.email, city: form.city, status: form.status,
-      potential: form.potential, revenue: form.revenue,
-      margin: form.margin, notes: form.notes,
-      last_contact: "Właśnie dodany",
-    }]).select();
-    if (error) { alert("Błąd zapisu: " + error.message); return; }
-    if (data) onAdd({...data[0], lastContact: data[0].last_contact});
+    if (isEdit) {
+      const { data, error } = await supabase.from("clients").update({
+        name: form.name, person: form.person, phone: form.phone,
+        email: form.email, city: form.city, status: form.status,
+        potential: form.potential, revenue: form.revenue,
+        margin: form.margin, notes: form.notes,
+      }).eq("id", initialData.id).select();
+      if (error) { alert("Błąd zapisu: " + error.message); return; }
+      if (data) onSave({...data[0], lastContact: data[0].last_contact});
+    } else {
+      const { data, error } = await supabase.from("clients").insert([{
+        name: form.name, person: form.person, phone: form.phone,
+        email: form.email, city: form.city, status: form.status,
+        potential: form.potential, revenue: form.revenue,
+        margin: form.margin, notes: form.notes,
+        last_contact: "Właśnie dodany",
+      }]).select();
+      if (error) { alert("Błąd zapisu: " + error.message); return; }
+      if (data) onSave({...data[0], lastContact: data[0].last_contact});
+    }
     onClose();
   };
   return (
@@ -94,8 +106,8 @@ function AddClientModal({ onClose, onAdd }) {
       <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-5 border-b border-[#1E2D45]">
           <div>
-            <div className="text-white font-bold text-lg">➕ Nowy klient</div>
-            <div className="text-slate-400 text-xs mt-0.5">Wypełnij dane kontaktowe</div>
+            <div className="text-white font-bold text-lg">{isEdit ? "✏️ Edytuj klienta" : "➕ Nowy klient"}</div>
+            <div className="text-slate-400 text-xs mt-0.5">{isEdit ? "Zmień dane klienta" : "Wypełnij dane kontaktowe"}</div>
           </div>
           <button onClick={onClose} className="text-slate-500 hover:text-white text-xl w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/5">✕</button>
         </div>
@@ -119,7 +131,7 @@ function AddClientModal({ onClose, onAdd }) {
         </div>
         <div className="p-5 border-t border-[#1E2D45] flex gap-3">
           <button onClick={onClose} className="flex-1 bg-[#0B0F1A] border border-[#1E2D45] text-slate-400 font-semibold text-sm py-3 rounded-xl hover:text-white transition-colors">Anuluj</button>
-          <button onClick={handleSubmit} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm py-3 rounded-xl transition-colors">✓ Zapisz klienta</button>
+          <button onClick={handleSubmit} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm py-3 rounded-xl transition-colors">{isEdit ? "✓ Zapisz zmiany" : "✓ Zapisz klienta"}</button>
         </div>
       </div>
     </div>
@@ -295,6 +307,7 @@ function Clients({ clients, setClients }) {
   const [filter, setFilter] = useState("all");
   const [selected, setSelected] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
+  const [editClient, setEditClient] = useState(null);
   const filtered = clients.filter(c => {
     const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.person.toLowerCase().includes(search.toLowerCase());
     const matchFilter = filter === "all" || c.status === filter;
@@ -302,7 +315,8 @@ function Clients({ clients, setClients }) {
   });
   return (
     <>
-      {showAdd && <AddClientModal onClose={() => setShowAdd(false)} onAdd={(c) => setClients(p => [...p, c])} />}
+      {showAdd && <ClientModal onClose={() => setShowAdd(false)} onSave={(c) => setClients(p => [...p, c])} />}
+      {editClient && <ClientModal onClose={() => setEditClient(null)} onSave={(c) => { setClients(p => p.map(x => x.id === c.id ? c : x)); setSelected(c); setEditClient(null); }} initialData={editClient} />}
       <div className="flex gap-4 h-full">
         <div className="flex flex-col gap-3 flex-1">
           <div className="flex gap-3">
@@ -387,6 +401,9 @@ function Clients({ clients, setClients }) {
                 <button className="flex-1 bg-blue-600 text-white font-semibold text-sm py-2.5 rounded-xl">📞 Zadzwoń</button>
                 <button className="flex-1 bg-[#0B0F1A] border border-[#1E2D45] text-blue-400 font-semibold text-sm py-2.5 rounded-xl">+ Przyp.</button>
               </div>
+              <button onClick={() => setEditClient(selected)} className="w-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-semibold text-sm py-2.5 rounded-xl hover:bg-blue-500/20 transition-colors">
+                ✏️ Edytuj klienta
+              </button>
               <button onClick={() => { if(window.confirm("Usunąć klienta?")) { setClients(p=>p.filter(c=>c.id!==selected.id)); setSelected(null); }}}
                 className="w-full bg-red-500/10 border border-red-500/20 text-red-400 font-semibold text-sm py-2.5 rounded-xl">
                 🗑️ Usuń klienta
