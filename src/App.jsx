@@ -1,33 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 
-const initialClients = [
-  { id: 1, name: "Budmax Sp. z o.o.", person: "Marek Kowalski", status: "Aktywny", potential: "VIP", revenue: "138 400 zł", margin: "22%", city: "Warszawa", lastContact: "2 dni temu", phone: "+48 601 234 567", email: "m.kowalski@budmax.pl", notes: "Stały klient od 3 lat. Preferuje kontakt 9-12." },
-  { id: 2, name: "Hydrotech Polska", person: "Anna Wiśniewska", status: "Aktywny", potential: "Wysoki", revenue: "94 200 zł", margin: "18%", city: "Kraków", lastContact: "5 dni temu", phone: "+48 602 345 678", email: "a.wisniewska@hydrotech.pl", notes: "Zainteresowana nową ofertą Q3." },
-  { id: 3, name: "Invest-Bud Kraków", person: "Piotr Nowak", status: "Prospekt", potential: "Wysoki", revenue: "67 800 zł", margin: "15%", city: "Wrocław", lastContact: "1 tydzień temu", phone: "+48 603 456 789", email: "p.nowak@investbud.pl", notes: "Pierwszy kontakt przez polecenie." },
-  { id: 4, name: "Stal-Beton Łódź", person: "Katarzyna Maj", status: "Aktywny", potential: "Średni", revenue: "45 100 zł", margin: "12%", city: "Łódź", lastContact: "3 dni temu", phone: "+48 604 567 890", email: "k.maj@stalbeton.pl", notes: "Kontakt co 2 tygodnie." },
-  { id: 5, name: "Prefabet Wrocław", person: "Tomasz Zając", status: "Nieaktywny", potential: "Niski", revenue: "18 300 zł", margin: "8%", city: "Gdańsk", lastContact: "3 tygodnie temu", phone: "+48 605 678 901", email: "t.zajac@prefabet.pl", notes: "Brak odpowiedzi od 3 tygodni." },
-  { id: 6, name: "DachPol SA", person: "Ewa Kowalczyk", status: "Aktywny", potential: "Wysoki", revenue: "82 600 zł", margin: "19%", city: "Poznań", lastContact: "1 dzień temu", phone: "+48 606 789 012", email: "e.kowalczyk@dachpol.pl", notes: "Duży projekt Q3 w planach." },
-];
-
-const initialReminders = [
-  { id: 1, clientName: "Budmax Sp. z o.o.", title: "Wysłać ofertę na izolacje", date: "2026-05-16", time: "14:00", priority: "Wysoki", type: "Email", done: false },
-  { id: 2, clientName: "Hydrotech Polska", title: "Follow-up po spotkaniu", date: "2026-05-16", time: "16:30", priority: "Średni", type: "Telefon", done: false },
-  { id: 3, clientName: "Invest-Bud Kraków", title: "Zadzwonić ws. dostawy", date: "2026-05-17", time: "09:00", priority: "Niski", type: "Telefon", done: false },
-  { id: 4, clientName: "DachPol SA", title: "Prezentacja nowej kolekcji", date: "2026-05-20", time: "11:00", priority: "Średni", type: "Wizyta", done: false },
-  { id: 5, clientName: "Stal-Beton Łódź", title: "Negocjacje cenowe Q3", date: "2026-05-22", time: "10:00", priority: "Wysoki", type: "Spotkanie", done: false },
-  { id: 6, clientName: "Hydrotech Polska", title: "Wysłać umowę ramową", date: "2026-05-14", time: "12:00", priority: "Wysoki", type: "Email", done: true },
-];
-
-const initialOpportunities = [
-  { id: 1, clientName: "Budmax Sp. z o.o.", title: "Izolacje termiczne — blok A", value: 34000, stage: "Oferta", probability: 70, date: "2026-04-01", notes: "Czeka na akceptację ceny" },
-  { id: 2, clientName: "Hydrotech Polska", title: "Rury stalowe kontrakt Q3", value: 18500, stage: "Negocjacje", probability: 85, date: "2026-03-15", notes: "Zostało uzgodnić termin dostawy" },
-  { id: 3, clientName: "Invest-Bud Kraków", title: "Kompletne wykończenia budynku", value: 92000, stage: "Kontakt", probability: 30, date: "2026-05-01", notes: "Pierwszy kontakt, duży potencjał" },
-  { id: 4, clientName: "DachPol SA", title: "Dachówki — projekt Kowalski", value: 27400, stage: "Oferta", probability: 60, date: "2026-04-20", notes: "Oferta wysłana, czekam na odpowiedź" },
-  { id: 5, clientName: "Stal-Beton Łódź", title: "Beton B30 kontrakt roczny", value: 56000, stage: "Negocjacje", probability: 75, date: "2026-03-01", notes: "Negocjacje w toku" },
-  { id: 6, clientName: "Prefabet Wrocław", title: "Prefabrykaty — osiedle Słoneczne", value: 41000, stage: "Nowa", probability: 20, date: "2026-05-10", notes: "Właśnie zidentyfikowana szansa" },
-];
-
 const statusColors = {
   "Aktywny":    "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30",
   "Prospekt":   "bg-blue-500/20 text-blue-400 border border-blue-500/30",
@@ -91,7 +64,9 @@ function Field({ label, name, value, onChange, type = "text", options, required 
       )}
     </div>
   );
-}function AddClientModal({ onClose, onAdd }) {
+}
+
+function AddClientModal({ onClose, onAdd }) {
   const [form, setForm] = useState({
     name: "", person: "", phone: "", email: "",
     city: "", status: "Prospekt", potential: "Średni",
@@ -149,18 +124,26 @@ function Field({ label, name, value, onChange, type = "text", options, required 
       </div>
     </div>
   );
-}
-
-function AddReminderModal({ onClose, onAdd, clients }) {
+}function AddReminderModal({ onClose, onAdd, clients }) {
   const [form, setForm] = useState({
     clientName: clients[0]?.name || "",
     title: "", date: "2026-05-16", time: "10:00",
     priority: "Średni", type: "Telefon",
   });
   const handleChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!form.title) { alert("Wpisz temat przypomnienia"); return; }
-    onAdd({ ...form, id: Date.now(), done: false });
+    const { data, error } = await supabase.from("reminders").insert([{
+      client_name: form.clientName,
+      title: form.title,
+      date: form.date,
+      time: form.time,
+      priority: form.priority,
+      type: form.type,
+      done: false,
+    }]).select();
+    if (error) { alert("Błąd zapisu: " + error.message); return; }
+    if (data) onAdd({...data[0], clientName: data[0].client_name});
     onClose();
   };
   return (
@@ -201,9 +184,19 @@ function AddOpportunityModal({ onClose, onAdd, clients }) {
     probability: 20, notes: "",
   });
   const handleChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!form.title || !form.value) { alert("Wypełnij temat i wartość szansy"); return; }
-    onAdd({ ...form, id: Date.now(), value: Number(form.value), date: new Date().toISOString().split("T")[0] });
+    const { data, error } = await supabase.from("opportunities").insert([{
+      client_name: form.clientName,
+      title: form.title,
+      value: Number(form.value),
+      stage: form.stage,
+      probability: Number(form.probability),
+      notes: form.notes,
+      date: new Date().toISOString().split("T")[0],
+    }]).select();
+    if (error) { alert("Błąd zapisu: " + error.message); return; }
+    if (data) onAdd({...data[0], clientName: data[0].client_name});
     onClose();
   };
   return (
@@ -348,6 +341,13 @@ function Clients({ clients, setClients }) {
                 <span className={`text-xs font-semibold px-2 py-1 rounded-lg ${statusColors[c.status]}`}>{c.status}</span>
               </div>
             ))}
+            {filtered.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-16 gap-3">
+                <div className="text-4xl">🔍</div>
+                <div className="text-white font-semibold">Brak klientów</div>
+                <div className="text-slate-400 text-sm">Zmień filtry lub dodaj nowego klienta</div>
+              </div>
+            )}
           </div>
         </div>
         {selected && (
@@ -402,15 +402,22 @@ function Clients({ clients, setClients }) {
 function Reminders({ reminders, setReminders, clients }) {
   const [showAdd, setShowAdd] = useState(false);
   const [filterTab, setFilterTab] = useState("all");
-  const today = "2026-05-16";
+  const today = new Date().toISOString().split("T")[0];
   const filtered = reminders.filter(r => {
     if (filterTab === "today") return r.date === today && !r.done;
     if (filterTab === "pending") return !r.done;
     if (filterTab === "done") return r.done;
     return true;
   });
-  const toggleDone = (id) => setReminders(p => p.map(r => r.id === id ? {...r, done: !r.done} : r));
-  const deleteReminder = (id) => setReminders(p => p.filter(r => r.id !== id));
+  const toggleDone = async (id) => {
+    const reminder = reminders.find(r => r.id === id);
+    await supabase.from("reminders").update({ done: !reminder.done }).eq("id", id);
+    setReminders(p => p.map(r => r.id === id ? {...r, done: !r.done} : r));
+  };
+  const deleteReminder = async (id) => {
+    await supabase.from("reminders").delete().eq("id", id);
+    setReminders(p => p.filter(r => r.id !== id));
+  };
   return (
     <>
       {showAdd && <AddReminderModal onClose={() => setShowAdd(false)} onAdd={(r) => setReminders(p => [...p, r])} clients={clients} />}
@@ -467,8 +474,16 @@ function Reminders({ reminders, setReminders, clients }) {
   const totalPipeline = opportunities.filter(o => activeStages.includes(o.stage)).reduce((s,o) => s + o.value, 0);
   const totalWeighted = opportunities.filter(o => activeStages.includes(o.stage)).reduce((s,o) => s + o.value * o.probability / 100, 0);
 
-  const changeStage = (id, stage) => setOpportunities(p => p.map(o => o.id === id ? {...o, stage} : o));
-  const deleteOpp = (id) => { setOpportunities(p => p.filter(o => o.id !== id)); setSelected(null); };
+  const changeStage = async (id, stage) => {
+    await supabase.from("opportunities").update({ stage }).eq("id", id);
+    setOpportunities(p => p.map(o => o.id === id ? {...o, stage} : o));
+  };
+
+  const deleteOpp = async (id) => {
+    await supabase.from("opportunities").delete().eq("id", id);
+    setOpportunities(p => p.filter(o => o.id !== id));
+    setSelected(null);
+  };
 
   return (
     <>
@@ -481,7 +496,6 @@ function Reminders({ reminders, setReminders, clients }) {
           </div>
           <button onClick={() => setShowAdd(true)} className="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors">+ Nowa szansa</button>
         </div>
-
         <div className="flex gap-3">
           {[
             { label: "Wartość pipeline", value: `${(totalPipeline/1000).toFixed(0)}k zł`, color: "text-blue-400" },
@@ -495,7 +509,6 @@ function Reminders({ reminders, setReminders, clients }) {
             </div>
           ))}
         </div>
-
         <div className="flex gap-4 flex-1 overflow-x-auto pb-2">
           {activeStages.map(stage => {
             const sc = stageConfig[stage];
@@ -531,7 +544,6 @@ function Reminders({ reminders, setReminders, clients }) {
             );
           })}
         </div>
-
         {selected && (
           <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl p-4 flex gap-4 items-start">
             <div className="flex-1">
@@ -595,9 +607,7 @@ export default function App() {
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadAll();
-  }, []);
+  useEffect(() => { loadAll(); }, []);
 
   async function loadAll() {
     setLoading(true);
