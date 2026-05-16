@@ -404,8 +404,15 @@ function Clients({ clients, setClients }) {
               <button onClick={() => setEditClient(selected)} className="w-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-semibold text-sm py-2.5 rounded-xl hover:bg-blue-500/20 transition-colors">
                 ✏️ Edytuj klienta
               </button>
-              <button onClick={() => { if(window.confirm("Usunąć klienta?")) { setClients(p=>p.filter(c=>c.id!==selected.id)); setSelected(null); }}}
-                className="w-full bg-red-500/10 border border-red-500/20 text-red-400 font-semibold text-sm py-2.5 rounded-xl">
+              <button onClick={async () => { 
+                if(window.confirm("Czy na pewno chcesz usunąć tego klienta?")) { 
+                  const { error } = await supabase.from("clients").delete().eq("id", selected.id);
+                  
+                  if (error) { alert("Błąd usuwania: " + error.message); return; }
+                  setClients(p=>p.filter(c=>c.id!==selected.id)); 
+                  setSelected(null); 
+                }}}
+                className="w-full bg-red-500/10 border border-red-500/20 text-red-400 font-semibold text-sm py-2.5 rounded-xl hover:bg-red-500/20 transition-colors">
                 🗑️ Usuń klienta
               </button>
             </div>
