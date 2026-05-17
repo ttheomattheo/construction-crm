@@ -1259,6 +1259,10 @@ function Offers({ clients, session, userProfile }) {
     const total_netto = filteredItems.reduce((s, i) => s + (parseFloat(i.netto) || 0), 0);
     const total_brutto = filteredItems.reduce((s, i) => s + (parseFloat(i.brutto) || 0), 0);
 
+    // Pobierz aktualny profil z bazy
+    const { data: profileData } = await supabase.from("profiles").select("first_name, last_name").eq("id", session?.user?.id).single();
+    const authorName = profileData ? `${profileData.first_name || ""} ${profileData.last_name || ""}`.trim() : (session?.user?.email || "Handlowiec");
+
     if (editOffer) {
       const { data, error } = await supabase.from("offers").update({
         items: filteredItems,
@@ -1281,7 +1285,7 @@ function Offers({ clients, session, userProfile }) {
         client_name: selectedClient.name,
         client_data: selectedClient,
         items: filteredItems,
-        author: `${userProfile?.first_name || ""} ${userProfile?.last_name || ""}`.trim() || session?.user?.email || "Handlowiec",
+        author: authorName,
         total_netto,
         total_brutto,
         user_id: userData?.user?.id,
