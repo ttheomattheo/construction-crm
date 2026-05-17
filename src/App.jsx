@@ -1549,7 +1549,7 @@ function Calendar({ reminders, setReminders, clients }) {
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
-  const holidays = getPolishHolidays(year);
+  const holidays = {};
 
   const getDayEvents = (dateStr) => reminders.filter(r => r.date === dateStr);
 
@@ -2393,7 +2393,8 @@ export default function App() {
     return data?.[0];
   }
 
-  const pendingCount = reminders.filter(r => !r.done).length;
+  const today = new Date().toISOString().split("T")[0];
+  const pendingCount = reminders.filter(r => !r.done && r.date === today).length;
 
   const pages = {
     dashboard: <Dashboard clients={clients} reminders={reminders} opportunities={opportunities} userProfile={userProfile} profiles={allProfiles} />,
