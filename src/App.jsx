@@ -42,6 +42,7 @@ const navItems = [
   { id: "clients", icon: "◎", label: "Klienci" },
   { id: "reminders", icon: "◷", label: "Przypomnienia" },
   { id: "opportunities", icon: "◈", label: "Szanse" },
+  { id: "offers", icon: "📄", label: "Oferty" },
   { id: "lost", icon: "⊗", label: "Utraceni" },
 ];
 
@@ -441,6 +442,9 @@ function Clients({ clients, setClients, loadActivities, addActivity }) {
               <button onClick={() => setShowHistory(selected)} className="w-full bg-purple-500/10 border border-purple-500/20 text-purple-400 font-semibold text-sm py-2.5 rounded-xl hover:bg-purple-500/20 transition-colors">
                 📋 Historia aktywności
               </button>
+              <button onClick={() => { setPage("offers"); setSelected(null); }} className="w-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-semibold text-sm py-2.5 rounded-xl hover:bg-emerald-500/20 transition-colors">
+                📄 Generuj ofertę
+              </button>
               <button onClick={async () => { 
                 if(window.confirm("Czy na pewno chcesz usunąć tego klienta?")) { 
                   const { error } = await supabase.from("clients").delete().eq("id", selected.id);
@@ -791,6 +795,271 @@ function GlobalSearch({ clients, reminders, opportunities, onClose, setPage }) {
   );
 }
 
+function generateOfferNumber(clientId) {
+  const now = new Date();
+  const day = String(now.getDate()).padStart(2, "0");
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const year = String(now.getFullYear()).slice(-2);
+  const clientNum = String(clientId || "000").slice(-3).padStart(3, "0");
+  return `OF/${day}${month}/${clientNum}/${year}`;
+}
+
+function OfferPDF({ offer, client, onClose }) {
+  const handlePrint = () => window.print();
+  const total_netto = offer.items.reduce((s, i) => s + (parseFloat(i.netto) || 0), 0);
+  const total_brutto = offer.items.reduce((s, i) => s + (parseFloat(i.brutto) || 0), 0);
+  const validUntil = new Date();
+  validUntil.setDate(validUntil.getDate() + 7);
+
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[95vh] overflow-y-auto text-black">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50 rounded-t-2xl">
+          <div className="flex gap-3">
+            <button onClick={handlePrint} className="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm px-4 py-2 rounded-xl transition-colors">🖨️ Drukuj / Pobierz PDF</button>
+            <button onClick={onClose} className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold text-sm px-4 py-2 rounded-xl transition-colors">✕ Zamknij</button>
+          </div>
+          <div className="text-gray-500 text-xs">Użyj Ctrl+P → Zapisz jako PDF</div>
+        </div>
+        <div id="offer-print" className="p-8">
+          <div className="flex justify-between items-start mb-8">
+            <div>
+              <div className="text-3xl font-black text-blue-700">HurtBud</div>
+              <div className="text-gray-500 text-sm mt-1">Hurtownia Materiałów Budowlanych</div>
+            </div>
+            <div className="text-right">
+              <div className="text-gray-800 font-bold text-lg">{offer.number}</div>
+              <div className="text-gray-500 text-sm">Data: {new Date().toLocaleDateString("pl-PL")}</div>
+              <div className="text-gray-500 text-sm">Ważna do: {validUntil.toLocaleDateString("pl-PL")}</div>
+              <div className="text-gray-500 text-sm">Wystawił: {offer.author}</div>
+            </div>
+          </div>
+          <div className="bg-gray-50 rounded-xl p-4 mb-6">
+            <div className="text-gray-500 text-xs uppercase tracking-wider mb-2">Klient</div>
+            <div className="text-gray-900 font-bold text-lg">{client?.name}</div>
+            <div className="text-gray-600 text-sm">{client?.person}</div>
+            <div className="text-gray-600 text-sm">{client?.city}</div>
+            <div className="text-gray-600 text-sm">{client?.phone}</div>
+          </div>
+          <table className="w-full mb-6">
+            <thead>
+              <tr className="bg-blue-700 text-white">
+                <th className="py-3 px-3 text-left text-sm font-semibold rounded-tl-lg">Lp.</th>
+                <th className="py-3 px-3 text-left text-sm font-semibold">Produkt</th>
+                <th className="py-3 px-3 text-center text-sm font-semibold">JM</th>
+                <th className="py-3 px-3 text-center text-sm font-semibold">Ilość</th>
+                <th className="py-3 px-3 text-right text-sm font-semibold">Netto</th>
+                <th className="py-3 px-3 text-right text-sm font-semibold rounded-tr-lg">Brutto</th>
+              </tr>
+            </thead>
+            <tbody>
+              {offer.items.map((item, i) => (
+                <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                  <td className="py-2.5 px-3 text-sm text-gray-600">{i + 1}</td>
+                  <td className="py-2.5 px-3 text-sm text-gray-900 font-medium">{item.product}</td>
+                  <td className="py-2.5 px-3 text-sm text-gray-600 text-center">{item.jm}</td>
+                  <td className="py-2.5 px-3 text-sm text-gray-600 text-center">{item.qty}</td>
+                  <td className="py-2.5 px-3 text-sm text-gray-900 text-right">{parseFloat(item.netto || 0).toLocaleString("pl-PL", {minimumFractionDigits: 2})} zł</td>
+                  <td className="py-2.5 px-3 text-sm text-gray-900 font-semibold text-right">{parseFloat(item.brutto || 0).toLocaleString("pl-PL", {minimumFractionDigits: 2})} zł</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="border-t-2 border-blue-700">
+                <td colSpan={4} className="py-3 px-3 text-right font-bold text-gray-800">RAZEM:</td>
+                <td className="py-3 px-3 text-right font-bold text-gray-900">{total_netto.toLocaleString("pl-PL", {minimumFractionDigits: 2})} zł</td>
+                <td className="py-3 px-3 text-right font-black text-blue-700 text-lg">{total_brutto.toLocaleString("pl-PL", {minimumFractionDigits: 2})} zł</td>
+              </tr>
+            </tfoot>
+          </table>
+          <div className="flex justify-between items-end mt-8 pt-6 border-t border-gray-200">
+            <div className="text-gray-400 text-xs">Oferta ważna 7 dni od daty wystawienia</div>
+            <div className="text-center">
+              <div className="w-48 border-t border-gray-400 pt-2 text-gray-500 text-xs">Podpis handlowca</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Offers({ clients }) {
+  const [offers, setOffers] = useState([]);
+  const [showCreate, setShowCreate] = useState(false);
+  const [selectedClient, setSelectedClient] = useState(clients[0] || null);
+  const [previewOffer, setPreviewOffer] = useState(null);
+  const [editOffer, setEditOffer] = useState(null);
+  const [items, setItems] = useState([{ product: "", jm: "szt", qty: "", netto: "", brutto: "" }]);
+
+  const jmOptions = ["szt", "m2", "m3", "opak", "mb", "kg", "t"];
+
+  const handleItemChange = (index, field, value) => {
+    setItems(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      if (field === "netto") {
+        updated[index].brutto = (parseFloat(value) * 1.23).toFixed(2);
+      }
+      if (field === "brutto") {
+        updated[index].netto = (parseFloat(value) / 1.23).toFixed(2);
+      }
+      return updated;
+    });
+  };
+
+  const addItem = () => setItems(prev => [...prev, { product: "", jm: "szt", qty: "", netto: "", brutto: "" }]);
+  const removeItem = (i) => setItems(prev => prev.filter((_, idx) => idx !== i));
+
+  const total_netto = items.reduce((s, i) => s + (parseFloat(i.netto) || 0), 0);
+  const total_brutto = items.reduce((s, i) => s + (parseFloat(i.brutto) || 0), 0);
+
+  const handleSave = () => {
+    if (!selectedClient) { alert("Wybierz klienta"); return; }
+    if (items.every(i => !i.product)) { alert("Dodaj przynajmniej jedną pozycję"); return; }
+    const offerData = {
+      id: editOffer ? editOffer.id : Date.now(),
+      number: editOffer ? editOffer.number : generateOfferNumber(selectedClient.id),
+      client: selectedClient,
+      items: items.filter(i => i.product),
+      author: "Piotr Handlowiec",
+      date: new Date().toISOString(),
+    };
+    if (editOffer) {
+      setOffers(prev => prev.map(o => o.id === editOffer.id ? offerData : o));
+    } else {
+      setOffers(prev => [offerData, ...prev]);
+    }
+    setPreviewOffer(offerData);
+    setShowCreate(false);
+    setEditOffer(null);
+    setItems([{ product: "", jm: "szt", qty: "", netto: "", brutto: "" }]);
+  };
+
+  const handleEdit = (offer) => {
+    setSelectedClient(offer.client);
+    setItems(offer.items);
+    setEditOffer(offer);
+    setShowCreate(true);
+  };
+
+  return (
+    <>
+      {previewOffer && <OfferPDF offer={previewOffer} client={previewOffer.client} onClose={() => setPreviewOffer(null)} />}
+      <div className="flex flex-col gap-4 h-full">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-white font-bold text-lg">📄 Oferty</div>
+            <div className="text-slate-400 text-xs mt-0.5">{offers.length} wystawionych ofert</div>
+          </div>
+          <button onClick={() => { setShowCreate(true); setEditOffer(null); setItems([{ product: "", jm: "szt", qty: "", netto: "", brutto: "" }]); }}
+            className="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors">+ Nowa oferta</button>
+        </div>
+
+        {showCreate && (
+          <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl p-5 flex flex-col gap-4">
+            <div className="text-white font-bold text-sm">{editOffer ? "✏️ Edytuj ofertę" : "➕ Nowa oferta"}</div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-slate-400 text-xs uppercase tracking-wider">Klient</label>
+              <select value={selectedClient?.id || ""} onChange={e => setSelectedClient(clients.find(c => c.id === e.target.value) || clients.find(c => String(c.id) === e.target.value))}
+                className="bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-blue-500">
+                {clients.map(c => <option key={c.id} value={c.id}>{c.name} — {c.person}</option>)}
+              </select>
+            </div>
+            <div className="flex flex-col gap-3">
+              <div className="grid grid-cols-12 gap-2 text-slate-400 text-xs uppercase tracking-wider px-1">
+                <div className="col-span-4">Produkt</div>
+                <div className="col-span-2">JM</div>
+                <div className="col-span-1">Ilość</div>
+                <div className="col-span-2">Netto</div>
+                <div className="col-span-2">Brutto</div>
+                <div className="col-span-1"></div>
+              </div>
+              {items.map((item, i) => (
+                <div key={i} className="grid grid-cols-12 gap-2 items-center">
+                  <div className="col-span-4">
+                    <input value={item.product} onChange={e => handleItemChange(i, "product", e.target.value)}
+                      placeholder="Nazwa produktu" className="w-full bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-3 py-2 text-white text-sm outline-none focus:border-blue-500 placeholder-slate-600" />
+                  </div>
+                  <div className="col-span-2">
+                    <select value={item.jm} onChange={e => handleItemChange(i, "jm", e.target.value)}
+                      className="w-full bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-2 py-2 text-white text-sm outline-none focus:border-blue-500">
+                      {jmOptions.map(j => <option key={j} value={j}>{j}</option>)}
+                    </select>
+                  </div>
+                  <div className="col-span-1">
+                    <input value={item.qty} onChange={e => handleItemChange(i, "qty", e.target.value)}
+                      type="number" placeholder="0" className="w-full bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-2 py-2 text-white text-sm outline-none focus:border-blue-500 placeholder-slate-600" />
+                  </div>
+                  <div className="col-span-2">
+                    <input value={item.netto} onChange={e => handleItemChange(i, "netto", e.target.value)}
+                      type="number" placeholder="0.00" className="w-full bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-2 py-2 text-white text-sm outline-none focus:border-blue-500 placeholder-slate-600" />
+                  </div>
+                  <div className="col-span-2">
+                    <input value={item.brutto} onChange={e => handleItemChange(i, "brutto", e.target.value)}
+                      type="number" placeholder="0.00" className="w-full bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-2 py-2 text-white text-sm outline-none focus:border-blue-500 placeholder-slate-600" />
+                  </div>
+                  <div className="col-span-1 flex justify-center">
+                    {items.length > 1 && (
+                      <button onClick={() => removeItem(i)} className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">✕</button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              <button onClick={addItem} className="flex items-center gap-2 text-blue-400 text-sm font-semibold hover:text-blue-300 transition-colors py-1">
+                <span className="w-7 h-7 bg-blue-500/20 border border-blue-500/30 rounded-lg flex items-center justify-center font-bold">+</span>
+                Dodaj pozycję
+              </button>
+            </div>
+            <div className="bg-[#0B0F1A] rounded-xl p-4 flex justify-between items-center">
+              <div className="text-slate-400 text-sm">Podsumowanie</div>
+              <div className="text-right">
+                <div className="text-slate-300 text-sm">Netto: <span className="text-white font-bold">{total_netto.toLocaleString("pl-PL", {minimumFractionDigits: 2})} zł</span></div>
+                <div className="text-slate-300 text-sm">Brutto: <span className="text-emerald-400 font-black text-lg">{total_brutto.toLocaleString("pl-PL", {minimumFractionDigits: 2})} zł</span></div>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => { setShowCreate(false); setEditOffer(null); }} className="flex-1 bg-[#0B0F1A] border border-[#1E2D45] text-slate-400 font-semibold text-sm py-3 rounded-xl">Anuluj</button>
+              <button onClick={handleSave} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm py-3 rounded-xl transition-colors">✓ Generuj ofertę</button>
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-col gap-3 overflow-y-auto flex-1">
+          {offers.length === 0 && !showCreate && (
+            <div className="flex flex-col items-center justify-center py-16 gap-3">
+              <div className="text-4xl">📄</div>
+              <div className="text-white font-semibold">Brak ofert</div>
+              <div className="text-slate-400 text-sm">Kliknij "+ Nowa oferta" aby zacząć</div>
+            </div>
+          )}
+          {offers.map(offer => {
+            const total = offer.items.reduce((s, i) => s + (parseFloat(i.brutto) || 0), 0);
+            return (
+              <div key={offer.id} className="bg-[#141929] border border-[#1E2D45] rounded-xl p-4 flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400 flex-shrink-0">📄</div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-white font-bold text-sm">{offer.number}</div>
+                  <div className="text-slate-400 text-xs">{offer.client?.name} · {new Date(offer.date).toLocaleDateString("pl-PL")}</div>
+                  <div className="text-slate-500 text-xs">{offer.items.length} pozycji</div>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <div className="text-emerald-400 font-black text-base">{total.toLocaleString("pl-PL", {minimumFractionDigits: 2})} zł</div>
+                  <div className="text-slate-500 text-xs">brutto</div>
+                </div>
+                <div className="flex gap-2 flex-shrink-0">
+                  <button onClick={() => setPreviewOffer(offer)} className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm">👁</button>
+                  <button onClick={() => handleEdit(offer)} className="w-9 h-9 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-sm">✏️</button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </>
+  );
+}
+
 function LostClients({ clients }) {
   const lost = clients.filter(c => c.status === "Utracony");
   return (
@@ -870,6 +1139,7 @@ export default function App() {
     clients: <Clients clients={clients} setClients={setClients} loadActivities={loadActivities} addActivity={addActivity} />,
     reminders: <Reminders reminders={reminders} setReminders={setReminders} clients={clients} />,
     opportunities: <Opportunities opportunities={opportunities} setOpportunities={setOpportunities} clients={clients} />,
+    offers: <Offers clients={clients} />,
     lost: <LostClients clients={clients} />,
   };
 
