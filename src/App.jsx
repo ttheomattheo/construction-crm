@@ -1755,6 +1755,8 @@ function Calendar({ reminders, setReminders, clients }) {
         {view === "week" && (
           <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl overflow-hidden flex-1 flex flex-col">
             {/* Naglowki dni */}
+            <div className="overflow-x-auto" style={{WebkitOverflowScrolling: "touch"}}>
+            <div style={{minWidth: "700px"}}>
             <div className="grid border-b border-[#1E2D45]" style={{gridTemplateColumns: "60px repeat(7, 1fr)"}}>
               <div className="border-r border-[#1E2D45]" />
               {weekDays.map((date, i) => {
@@ -1776,8 +1778,11 @@ function Calendar({ reminders, setReminders, clients }) {
               })}
             </div>
 
+            </div>
+            </div>
             {/* Siatka godzin */}
-            <div className="overflow-y-auto flex-1" style={{WebkitOverflowScrolling: "touch", touchAction: "pan-y"}}>
+            <div className="overflow-x-auto overflow-y-auto flex-1" style={{WebkitOverflowScrolling: "touch"}}>
+            <div style={{minWidth: "700px"}}>
               <div className="relative" style={{minHeight: "660px"}}>
                 {/* Linie godzin */}
                 {Array.from({length: 11}, (_, i) => i + 7).map(hour => (
@@ -1814,6 +1819,7 @@ function Calendar({ reminders, setReminders, clients }) {
                   </div>
                 ))}
               </div>
+            </div>
             </div>
           </div>
         )}
@@ -2393,7 +2399,8 @@ export default function App() {
     return data?.[0];
   }
 
-  const pendingCount = reminders.filter(r => !r.done).length;
+  const todayStr = new Date().toISOString().split("T")[0];
+  const pendingCount = reminders.filter(r => !r.done && r.date === todayStr).length;
 
   const pages = {
     dashboard: <Dashboard clients={clients} reminders={reminders} opportunities={opportunities} userProfile={userProfile} profiles={allProfiles} />,
