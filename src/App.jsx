@@ -93,12 +93,14 @@ function ClientModal({ onClose, onSave, initialData = null }) {
       if (error) { alert("Blad zapisu: " + error.message); return; }
       if (data) onSave({...data[0], lastContact: data[0].last_contact});
     } else {
+      const { data: userData } = await supabase.auth.getUser();
       const { data, error } = await supabase.from("clients").insert([{
         name: form.name, person: form.person, phone: form.phone,
         email: form.email, city: form.city, status: form.status,
         potential: form.potential, revenue: form.revenue,
         margin: form.margin, notes: form.notes,
         last_contact: "Wlasnie dodany",
+        user_id: userData?.user?.id,
       }]).select();
       if (error) { alert("Blad zapisu: " + error.message); return; }
       if (data) onSave({...data[0], lastContact: data[0].last_contact});
@@ -152,6 +154,7 @@ function AddReminderModal({ onClose, onAdd, clients }) {
   const handleChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
   const handleSubmit = async () => {
     if (!form.title) { alert("Wpisz temat przypomnienia"); return; }
+    const { data: userData } = await supabase.auth.getUser();
     const { data, error } = await supabase.from("reminders").insert([{
       client_name: form.clientName,
       title: form.title,
@@ -160,6 +163,7 @@ function AddReminderModal({ onClose, onAdd, clients }) {
       priority: form.priority,
       type: form.type,
       done: false,
+      user_id: userData?.user?.id,
     }]).select();
     if (error) { alert("Blad zapisu: " + error.message); return; }
     if (data) onAdd({...data[0], clientName: data[0].client_name});
@@ -205,6 +209,7 @@ function AddOpportunityModal({ onClose, onAdd, clients }) {
   const handleChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
   const handleSubmit = async () => {
     if (!form.title || !form.value) { alert("Wypelnij temat i wartosc szansy"); return; }
+    const { data: userData } = await supabase.auth.getUser();
     const { data, error } = await supabase.from("opportunities").insert([{
       client_name: form.clientName,
       title: form.title,
@@ -213,6 +218,7 @@ function AddOpportunityModal({ onClose, onAdd, clients }) {
       probability: Number(form.probability),
       notes: form.notes,
       date: new Date().toISOString().split("T")[0],
+      user_id: userData?.user?.id,
     }]).select();
     if (error) { alert("Blad zapisu: " + error.message); return; }
     if (data) onAdd({...data[0], clientName: data[0].client_name});
@@ -1028,6 +1034,7 @@ function Offers({ clients }) {
         setPreviewOffer(updated);
       }
     } else {
+      const { data: userData } = await supabase.auth.getUser();
       const { data, error } = await supabase.from("offers").insert([{
         number: generateOfferNumber(selectedClient.id),
         client_id: selectedClient.id,
@@ -1037,6 +1044,7 @@ function Offers({ clients }) {
         author: "Piotr Handlowiec",
         total_netto,
         total_brutto,
+        user_id: userData?.user?.id,
       }]).select();
       if (error) { alert("Blad zapisu: " + error.message); return; }
       if (data) {
@@ -1752,6 +1760,7 @@ export default function App() {
   async function addActivity(clientId, activity) {
     const { data, error } = await supabase.from("activities").insert([{
       client_id: clientId,
+      user_id: session?.user?.id,
       type: activity.type,
       title: activity.title,
       description: activity.description,
@@ -1766,10 +1775,10 @@ export default function App() {
 
   const pages = {
     dashboard: <Dashboard clients={clients} reminders={reminders} opportunities={opportunities} />,
-    clients: <Clients clients={clients} setClients={setClients} loadActivities={loadActivities} addActivity={addActivity} setPage={setPage} />,
-    reminders: <Reminders reminders={reminders} setReminders={setReminders} clients={clients} />,
-    opportunities: <Opportunities opportunities={opportunities} setOpportunities={setOpportunities} clients={clients} />,
-    offers: <Offers clients={clients} />,
+    clients: <Clients clients={clients} setClients={setClients} loadActivities={loadActivities} addActivity={addActivity} setPage={setPage} session={session} />,
+    reminders: <Reminders reminders={reminders} setReminders={setReminders} clients={clients} session={session} />,
+    opportunities: <Opportunities opportunities={opportunities} setOpportunities={setOpportunities} clients={clients} session={session} />,
+    offers: <Offers clients={clients} session={session} />,
     lost: <LostClients clients={clients} />,
   };
 
