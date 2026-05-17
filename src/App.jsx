@@ -13,12 +13,12 @@ const statusColors = {
 
 const potentialColors = {
   "VIP": "text-purple-400", "Wysoki": "text-emerald-400",
-  "Średni": "text-yellow-400", "Niski": "text-slate-400",
+  "Sredni": "text-yellow-400", "Niski": "text-slate-400",
 };
 
 const priorityConfig = {
   "Wysoki": { color: "text-red-400", bg: "bg-red-500/20 border border-red-500/30", dot: "bg-red-500" },
-  "Średni": { color: "text-yellow-400", bg: "bg-yellow-500/20 border border-yellow-500/30", dot: "bg-yellow-500" },
+  "Sredni": { color: "text-yellow-400", bg: "bg-yellow-500/20 border border-yellow-500/30", dot: "bg-yellow-500" },
   "Niski":  { color: "text-emerald-400", bg: "bg-emerald-500/20 border border-emerald-500/30", dot: "bg-emerald-500" },
 };
 
@@ -74,13 +74,13 @@ function ClientModal({ onClose, onSave, initialData = null }) {
   const isEdit = !!initialData;
   const [form, setForm] = useState(initialData || {
     name: "", person: "", phone: "", email: "",
-    city: "", status: "Prospekt", potential: "Średni",
-    revenue: "0 zł", margin: "0%", notes: "",
+    city: "", status: "Prospekt", potential: "Sredni",
+    revenue: "0 zl", margin: "0%", notes: "",
   });
   const handleChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
   const handleSubmit = async () => {
     if (!form.name || !form.person || !form.phone) {
-      alert("Wypełnij wymagane pola: Firma, Osoba kontaktowa, Telefon");
+      alert("Wypelnij wymagane pola: Firma, Osoba kontaktowa, Telefon");
       return;
     }
     if (isEdit) {
@@ -90,7 +90,7 @@ function ClientModal({ onClose, onSave, initialData = null }) {
         potential: form.potential, revenue: form.revenue,
         margin: form.margin, notes: form.notes,
       }).eq("id", initialData.id).select();
-      if (error) { alert("Błąd zapisu: " + error.message); return; }
+      if (error) { alert("Blad zapisu: " + error.message); return; }
       if (data) onSave({...data[0], lastContact: data[0].last_contact});
     } else {
       const { data, error } = await supabase.from("clients").insert([{
@@ -98,9 +98,9 @@ function ClientModal({ onClose, onSave, initialData = null }) {
         email: form.email, city: form.city, status: form.status,
         potential: form.potential, revenue: form.revenue,
         margin: form.margin, notes: form.notes,
-        last_contact: "Właśnie dodany",
+        last_contact: "Wlasnie dodany",
       }]).select();
-      if (error) { alert("Błąd zapisu: " + error.message); return; }
+      if (error) { alert("Blad zapisu: " + error.message); return; }
       if (data) onSave({...data[0], lastContact: data[0].last_contact});
     }
     onClose();
@@ -111,7 +111,7 @@ function ClientModal({ onClose, onSave, initialData = null }) {
         <div className="flex items-center justify-between p-5 border-b border-[#1E2D45]">
           <div>
             <div className="text-white font-bold text-lg">{isEdit ? "✏️ Edytuj klienta" : "➕ Nowy klient"}</div>
-            <div className="text-slate-400 text-xs mt-0.5">{isEdit ? "Zmień dane klienta" : "Wypełnij dane kontaktowe"}</div>
+            <div className="text-slate-400 text-xs mt-0.5">{isEdit ? "Zmien dane klienta" : "Wypelnij dane kontaktowe"}</div>
           </div>
           <button onClick={onClose} className="text-slate-500 hover:text-white text-xl w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/5">✕</button>
         </div>
@@ -125,11 +125,11 @@ function ClientModal({ onClose, onSave, initialData = null }) {
           <Field label="Miasto" name="city" value={form.city} onChange={handleChange} />
           <div className="grid grid-cols-2 gap-3">
             <Field label="Status" name="status" value={form.status} onChange={handleChange} options={["Aktywny","Prospekt","Nieaktywny","Utracony"]} />
-            <Field label="Potencjał" name="potential" value={form.potential} onChange={handleChange} options={["VIP","Wysoki","Średni","Niski"]} />
+            <Field label="Potencjal" name="potential" value={form.potential} onChange={handleChange} options={["VIP","Wysoki","Sredni","Niski"]} />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Obrót (zł)" name="revenue" value={form.revenue} onChange={handleChange} />
-            <Field label="Marża (%)" name="margin" value={form.margin} onChange={handleChange} />
+            <Field label="Obrot (zl)" name="revenue" value={form.revenue} onChange={handleChange} />
+            <Field label="Marza (%)" name="margin" value={form.margin} onChange={handleChange} />
           </div>
           <Field label="Notatki" name="notes" value={form.notes} onChange={handleChange} type="textarea" />
         </div>
@@ -140,11 +140,14 @@ function ClientModal({ onClose, onSave, initialData = null }) {
       </div>
     </div>
   );
-}function AddReminderModal({ onClose, onAdd, clients }) {
+}
+
+function AddReminderModal({ onClose, onAdd, clients }) {
+  const today = new Date().toISOString().split("T")[0];
   const [form, setForm] = useState({
     clientName: clients[0]?.name || "",
-    title: "", date: "2026-05-16", time: "10:00",
-    priority: "Średni", type: "Telefon",
+    title: "", date: today, time: "10:00",
+    priority: "Sredni", type: "Telefon",
   });
   const handleChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
   const handleSubmit = async () => {
@@ -158,7 +161,7 @@ function ClientModal({ onClose, onSave, initialData = null }) {
       type: form.type,
       done: false,
     }]).select();
-    if (error) { alert("Błąd zapisu: " + error.message); return; }
+    if (error) { alert("Blad zapisu: " + error.message); return; }
     if (data) onAdd({...data[0], clientName: data[0].client_name});
     onClose();
   };
@@ -180,7 +183,7 @@ function ClientModal({ onClose, onSave, initialData = null }) {
             <Field label="Godzina" name="time" value={form.time} onChange={handleChange} type="time" />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Priorytet" name="priority" value={form.priority} onChange={handleChange} options={["Wysoki","Średni","Niski"]} />
+            <Field label="Priorytet" name="priority" value={form.priority} onChange={handleChange} options={["Wysoki","Sredni","Niski"]} />
             <Field label="Typ kontaktu" name="type" value={form.type} onChange={handleChange} options={["Telefon","Email","Wizyta","Spotkanie","WhatsApp"]} />
           </div>
         </div>
@@ -201,7 +204,7 @@ function AddOpportunityModal({ onClose, onAdd, clients }) {
   });
   const handleChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
   const handleSubmit = async () => {
-    if (!form.title || !form.value) { alert("Wypełnij temat i wartość szansy"); return; }
+    if (!form.title || !form.value) { alert("Wypelnij temat i wartosc szansy"); return; }
     const { data, error } = await supabase.from("opportunities").insert([{
       client_name: form.clientName,
       title: form.title,
@@ -211,7 +214,7 @@ function AddOpportunityModal({ onClose, onAdd, clients }) {
       notes: form.notes,
       date: new Date().toISOString().split("T")[0],
     }]).select();
-    if (error) { alert("Błąd zapisu: " + error.message); return; }
+    if (error) { alert("Blad zapisu: " + error.message); return; }
     if (data) onAdd({...data[0], clientName: data[0].client_name});
     onClose();
   };
@@ -220,42 +223,44 @@ function AddOpportunityModal({ onClose, onAdd, clients }) {
       <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl w-full max-w-lg">
         <div className="flex items-center justify-between p-5 border-b border-[#1E2D45]">
           <div>
-            <div className="text-white font-bold text-lg">💡 Nowa szansa sprzedaży</div>
-            <div className="text-slate-400 text-xs mt-0.5">Dodaj szansę do pipeline</div>
+            <div className="text-white font-bold text-lg">💡 Nowa szansa sprzedazy</div>
+            <div className="text-slate-400 text-xs mt-0.5">Dodaj szanse do pipeline</div>
           </div>
           <button onClick={onClose} className="text-slate-500 hover:text-white text-xl w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/5">✕</button>
         </div>
         <div className="p-5 flex flex-col gap-4">
           <Field label="Klient" name="clientName" value={form.clientName} onChange={handleChange} options={clients.map(c => c.name)} />
-          <Field label="Tytuł szansy" name="title" value={form.title} onChange={handleChange} required />
+          <Field label="Tytul szansy" name="title" value={form.title} onChange={handleChange} required />
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Wartość (zł)" name="value" value={form.value} onChange={handleChange} type="number" required />
-            <Field label="Prawdopodobieństwo %" name="probability" value={form.probability} onChange={handleChange} type="number" />
+            <Field label="Wartosc (zl)" name="value" value={form.value} onChange={handleChange} type="number" required />
+            <Field label="Prawdopodobienstwo %" name="probability" value={form.probability} onChange={handleChange} type="number" />
           </div>
           <Field label="Etap" name="stage" value={form.stage} onChange={handleChange} options={stages} />
           <Field label="Notatki" name="notes" value={form.notes} onChange={handleChange} type="textarea" />
         </div>
         <div className="p-5 border-t border-[#1E2D45] flex gap-3">
           <button onClick={onClose} className="flex-1 bg-[#0B0F1A] border border-[#1E2D45] text-slate-400 font-semibold text-sm py-3 rounded-xl hover:text-white transition-colors">Anuluj</button>
-          <button onClick={handleSubmit} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm py-3 rounded-xl transition-colors">✓ Zapisz szansę</button>
+          <button onClick={handleSubmit} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm py-3 rounded-xl transition-colors">✓ Zapisz szanse</button>
         </div>
       </div>
     </div>
   );
-}function Dashboard({ clients, reminders, opportunities }) {
+}
+
+function Dashboard({ clients, reminders, opportunities }) {
   const pending = reminders.filter(r => !r.done);
   const totalPipeline = opportunities.filter(o => !["Wygrana","Utracona"].includes(o.stage)).reduce((s,o) => s + o.value, 0);
   return (
     <div className="flex flex-col gap-6">
       <div>
         <div className="text-slate-400 text-sm mb-1">{new Date().toLocaleDateString('pl-PL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
-        <div className="text-white text-2xl font-bold">Dzień dobry 👋</div>
+        <div className="text-white text-2xl font-bold">Dzien dobry 👋</div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         {[
           { icon: "👥", label: "Klienci", value: clients.length, sub: "w bazie", color: "bg-blue-500" },
-          { icon: "🔔", label: "Przypomnienia", value: pending.length, sub: "oczekujących", color: "bg-yellow-500" },
-          { icon: "💡", label: "Pipeline", value: `${(totalPipeline/1000).toFixed(0)}k zł`, sub: "wartość szans", color: "bg-purple-500" },
+          { icon: "🔔", label: "Przypomnienia", value: pending.length, sub: "oczekujacych", color: "bg-yellow-500" },
+          { icon: "💡", label: "Pipeline", value: `${(totalPipeline/1000).toFixed(0)}k zl`, sub: "wartosc szans", color: "bg-purple-500" },
           { icon: "🔴", label: "Pilne", value: pending.filter(r=>r.priority==="Wysoki").length, sub: "wysokie priorytety", color: "bg-red-500" },
         ].map((card) => (
           <div key={card.label} className="bg-[#141929] border border-[#1E2D45] rounded-2xl p-4 relative overflow-hidden">
@@ -267,37 +272,37 @@ function AddOpportunityModal({ onClose, onAdd, clients }) {
         ))}
       </div>
       <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl p-5">
-          <div className="text-white font-bold text-sm mb-4">📈 Aktywność — ostatnie wpisy</div>
-          <Bar
-            data={{
-              labels: ["Nowa", "Kontakt", "Oferta", "Negocjacje", "Wygrana", "Utracona"],
-              datasets: [{
-                label: "Szanse sprzedaży",
-                data: [
-                  opportunities.filter(o=>o.stage==="Nowa").length,
-                  opportunities.filter(o=>o.stage==="Kontakt").length,
-                  opportunities.filter(o=>o.stage==="Oferta").length,
-                  opportunities.filter(o=>o.stage==="Negocjacje").length,
-                  opportunities.filter(o=>o.stage==="Wygrana").length,
-                  opportunities.filter(o=>o.stage==="Utracona").length,
-                ],
-                backgroundColor: ["#3B7EF6", "#F59E0B", "#10B981", "#8B5CF6"],
-                borderRadius: 8,
-              }]
-            }}
-            options={{
-              responsive: true,
-              plugins: { legend: { display: false } },
-              scales: {
-                x: { ticks: { color: "#64748B" }, grid: { color: "#1E2D45" } },
-                y: { ticks: { color: "#64748B" }, grid: { color: "#1E2D45" }, beginAtZero: true },
-              }
-            }}
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="text-white font-bold text-sm mb-4">📈 Aktywnosc — ostatnie wpisy</div>
+        <Bar
+          data={{
+            labels: ["Nowa", "Kontakt", "Oferta", "Negocjacje", "Wygrana", "Utracona"],
+            datasets: [{
+              label: "Szanse sprzedazy",
+              data: [
+                opportunities.filter(o=>o.stage==="Nowa").length,
+                opportunities.filter(o=>o.stage==="Kontakt").length,
+                opportunities.filter(o=>o.stage==="Oferta").length,
+                opportunities.filter(o=>o.stage==="Negocjacje").length,
+                opportunities.filter(o=>o.stage==="Wygrana").length,
+                opportunities.filter(o=>o.stage==="Utracona").length,
+              ],
+              backgroundColor: ["#3B7EF6", "#F59E0B", "#10B981", "#8B5CF6"],
+              borderRadius: 8,
+            }]
+          }}
+          options={{
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { ticks: { color: "#64748B" }, grid: { color: "#1E2D45" } },
+              y: { ticks: { color: "#64748B" }, grid: { color: "#1E2D45" }, beginAtZero: true },
+            }
+          }}
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
         <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl p-5">
-          <div className="text-white font-bold text-sm mb-4">🏆 Ranking klientów</div>
+          <div className="text-white font-bold text-sm mb-4">🏆 Ranking klientow</div>
           {clients.slice(0,5).map((c,i) => (
             <div key={c.id} className="flex items-center gap-3 mb-3">
               <div className={`font-black text-base w-5 ${i===0?"text-yellow-400":"text-slate-500"}`}>{i+1}</div>
@@ -312,7 +317,7 @@ function AddOpportunityModal({ onClose, onAdd, clients }) {
           ))}
         </div>
         <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl p-5">
-          <div className="text-white font-bold text-sm mb-4">💡 Top szanse sprzedaży</div>
+          <div className="text-white font-bold text-sm mb-4">💡 Top szanse sprzedazy</div>
           {opportunities.filter(o=>!["Wygrana","Utracona"].includes(o.stage)).slice(0,4).map((o) => {
             const sc = stageConfig[o.stage];
             return (
@@ -323,7 +328,7 @@ function AddOpportunityModal({ onClose, onAdd, clients }) {
                   <div className="text-slate-500 text-xs">{o.clientName}</div>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <div className="text-emerald-400 font-bold text-xs">{o.value.toLocaleString()} zł</div>
+                  <div className="text-emerald-400 font-bold text-xs">{o.value.toLocaleString()} zl</div>
                   <div className="text-slate-500 text-xs">{o.probability}%</div>
                 </div>
               </div>
@@ -335,7 +340,7 @@ function AddOpportunityModal({ onClose, onAdd, clients }) {
   );
 }
 
-function Clients({ clients, setClients, loadActivities, addActivity }) {
+function Clients({ clients, setClients, loadActivities, addActivity, setPage }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [selected, setSelected] = useState(null);
@@ -369,7 +374,7 @@ function Clients({ clients, setClients, loadActivities, addActivity }) {
                 {label}
               </button>
             ))}
-            <div className="ml-auto text-slate-500 text-xs flex items-center">{filtered.length} klientów</div>
+            <div className="ml-auto text-slate-500 text-xs flex items-center">{filtered.length} klientow</div>
           </div>
           <div className="flex flex-col gap-2 overflow-y-auto">
             {filtered.map(c => (
@@ -385,7 +390,7 @@ function Clients({ clients, setClients, loadActivities, addActivity }) {
                 </div>
                 <div className="text-right flex-shrink-0">
                   <div className="text-white font-bold text-sm">{c.revenue}</div>
-                  <div className="text-emerald-400 text-xs">{c.margin} marży</div>
+                  <div className="text-emerald-400 text-xs">{c.margin} marzy</div>
                 </div>
                 <span className={`text-xs font-semibold px-2 py-1 rounded-lg ${statusColors[c.status]}`}>{c.status}</span>
               </div>
@@ -393,8 +398,8 @@ function Clients({ clients, setClients, loadActivities, addActivity }) {
             {filtered.length === 0 && (
               <div className="flex flex-col items-center justify-center py-16 gap-3">
                 <div className="text-4xl">🔍</div>
-                <div className="text-white font-semibold">Brak klientów</div>
-                <div className="text-slate-400 text-sm">Zmień filtry lub dodaj nowego klienta</div>
+                <div className="text-white font-semibold">Brak klientow</div>
+                <div className="text-slate-400 text-sm">Zmien filtry lub dodaj nowego klienta</div>
               </div>
             )}
           </div>
@@ -419,7 +424,7 @@ function Clients({ clients, setClients, loadActivities, addActivity }) {
             </div>
             <div className="p-4 flex flex-col gap-3 flex-1 overflow-y-auto">
               <div className="grid grid-cols-2 gap-2">
-                {[["Telefon",selected.phone,"text-blue-400"],["Miasto",selected.city,"text-white"],["Obrót",selected.revenue,"text-emerald-400"],["Marża",selected.margin,"text-emerald-400"]].map(([label,val,cls]) => (
+                {[["Telefon",selected.phone,"text-blue-400"],["Miasto",selected.city,"text-white"],["Obrot",selected.revenue,"text-emerald-400"],["Marza",selected.margin,"text-emerald-400"]].map(([label,val,cls]) => (
                   <div key={label} className="bg-[#0B0F1A] rounded-xl p-3">
                     <div className="text-slate-500 text-xs mb-1 uppercase tracking-wider">{label}</div>
                     <div className={`font-semibold text-sm ${cls}`}>{val}</div>
@@ -433,28 +438,27 @@ function Clients({ clients, setClients, loadActivities, addActivity }) {
                 </div>
               )}
               <div className="flex gap-2">
-                <a href={`tel:${selected.phone}`} className="flex-1 bg-blue-600 text-white font-semibold text-sm py-2.5 rounded-xl text-center">📞 Zadzwoń</a>
+                <a href={`tel:${selected.phone}`} className="flex-1 bg-blue-600 text-white font-semibold text-sm py-2.5 rounded-xl text-center">📞 Zadzwon</a>
                 <button onClick={() => setShowAdd(true)} className="flex-1 bg-[#0B0F1A] border border-[#1E2D45] text-blue-400 font-semibold text-sm py-2.5 rounded-xl">🔔 + Przyp.</button>
               </div>
               <button onClick={() => setEditClient(selected)} className="w-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-semibold text-sm py-2.5 rounded-xl hover:bg-blue-500/20 transition-colors">
                 ✏️ Edytuj klienta
               </button>
               <button onClick={() => setShowHistory(selected)} className="w-full bg-purple-500/10 border border-purple-500/20 text-purple-400 font-semibold text-sm py-2.5 rounded-xl hover:bg-purple-500/20 transition-colors">
-                📋 Historia aktywności
+                📋 Historia aktywnosci
               </button>
               <button onClick={() => { setPage("offers"); setSelected(null); }} className="w-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-semibold text-sm py-2.5 rounded-xl hover:bg-emerald-500/20 transition-colors">
-                📄 Generuj ofertę
+                📄 Generuj oferte
               </button>
-              <button onClick={async () => { 
-                if(window.confirm("Czy na pewno chcesz usunąć tego klienta?")) { 
+              <button onClick={async () => {
+                if(window.confirm("Czy na pewno chcesz usunac tego klienta?")) {
                   const { error } = await supabase.from("clients").delete().eq("id", selected.id);
-                  
-                  if (error) { alert("Błąd usuwania: " + error.message); return; }
-                  setClients(p=>p.filter(c=>c.id!==selected.id)); 
-                  setSelected(null); 
+                  if (error) { alert("Blad usuwania: " + error.message); return; }
+                  setClients(p=>p.filter(c=>c.id!==selected.id));
+                  setSelected(null);
                 }}}
                 className="w-full bg-red-500/10 border border-red-500/20 text-red-400 font-semibold text-sm py-2.5 rounded-xl hover:bg-red-500/20 transition-colors">
-                🗑️ Usuń klienta
+                🗑️ Usun klienta
               </button>
             </div>
           </div>
@@ -490,12 +494,12 @@ function Reminders({ reminders, setReminders, clients }) {
         <div className="flex items-center justify-between">
           <div>
             <div className="text-white font-bold text-lg">Przypomnienia</div>
-            <div className="text-slate-400 text-xs mt-0.5">{reminders.filter(r=>!r.done).length} oczekujących</div>
+            <div className="text-slate-400 text-xs mt-0.5">{reminders.filter(r=>!r.done).length} oczekujacych</div>
           </div>
           <button onClick={() => setShowAdd(true)} className="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors">+ Nowe</button>
         </div>
         <div className="flex gap-2">
-          {[["all","Wszystkie"],["today","Dziś"],["pending","Oczekujące"],["done","Wykonane"]].map(([val,label]) => (
+          {[["all","Wszystkie"],["today","Dzis"],["pending","Oczekujace"],["done","Wykonane"]].map(([val,label]) => (
             <button key={val} onClick={() => setFilterTab(val)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${filterTab===val ? "bg-blue-600 text-white" : "bg-[#141929] border border-[#1E2D45] text-slate-400"}`}>
               {label}
@@ -505,7 +509,7 @@ function Reminders({ reminders, setReminders, clients }) {
         </div>
         <div className="flex flex-col gap-3 overflow-y-auto flex-1">
           {filtered.map(r => {
-            const pr = priorityConfig[r.priority];
+            const pr = priorityConfig[r.priority] || priorityConfig["Sredni"];
             return (
               <div key={r.id} className={`bg-[#141929] border border-[#1E2D45] rounded-xl p-4 flex items-center gap-4 ${r.done?"opacity-50":""}`}>
                 <div className={`w-1 h-12 rounded-full ${pr.dot} flex-shrink-0`} />
@@ -532,7 +536,9 @@ function Reminders({ reminders, setReminders, clients }) {
       </div>
     </>
   );
-}function Opportunities({ opportunities, setOpportunities, clients }) {
+}
+
+function Opportunities({ opportunities, setOpportunities, clients }) {
   const [showAdd, setShowAdd] = useState(false);
   const [selected, setSelected] = useState(null);
   const activeStages = ["Nowa", "Kontakt", "Oferta", "Negocjacje"];
@@ -556,15 +562,15 @@ function Reminders({ reminders, setReminders, clients }) {
       <div className="flex flex-col gap-4 h-full">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-white font-bold text-lg">Szanse sprzedaży</div>
+            <div className="text-white font-bold text-lg">Szanse sprzedazy</div>
             <div className="text-slate-400 text-xs mt-0.5">{opportunities.filter(o=>activeStages.includes(o.stage)).length} aktywnych szans</div>
           </div>
           <button onClick={() => setShowAdd(true)} className="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors">+ Nowa szansa</button>
         </div>
         <div className="flex gap-3">
           {[
-            { label: "Wartość pipeline", value: `${(totalPipeline/1000).toFixed(0)}k zł`, color: "text-blue-400" },
-            { label: "Wartość ważona", value: `${(totalWeighted/1000).toFixed(0)}k zł`, color: "text-purple-400" },
+            { label: "Wartosc pipeline", value: `${(totalPipeline/1000).toFixed(0)}k zl`, color: "text-blue-400" },
+            { label: "Wartosc wazona", value: `${(totalWeighted/1000).toFixed(0)}k zl`, color: "text-purple-400" },
             { label: "Wygrane", value: opportunities.filter(o=>o.stage==="Wygrana").length, color: "text-emerald-400" },
             { label: "Utracone", value: opportunities.filter(o=>o.stage==="Utracona").length, color: "text-red-400" },
           ].map(card => (
@@ -587,7 +593,7 @@ function Reminders({ reminders, setReminders, clients }) {
                     <span className={`font-bold text-sm ${sc.color}`}>{stage}</span>
                     <span className="ml-auto bg-[#0B0F1A] text-slate-400 text-xs px-2 py-0.5 rounded-lg">{stageOpps.length}</span>
                   </div>
-                  <div className="text-slate-500 text-xs">{stageTotal.toLocaleString()} zł</div>
+                  <div className="text-slate-500 text-xs">{stageTotal.toLocaleString()} zl</div>
                 </div>
                 <div className="flex flex-col gap-2 overflow-y-auto flex-1">
                   {stageOpps.map(o => (
@@ -596,7 +602,7 @@ function Reminders({ reminders, setReminders, clients }) {
                       <div className="text-white font-semibold text-xs mb-1 leading-tight">{o.title}</div>
                       <div className="text-slate-400 text-xs mb-2">{o.clientName}</div>
                       <div className="flex items-center justify-between">
-                        <span className="text-emerald-400 font-bold text-xs">{o.value.toLocaleString()} zł</span>
+                        <span className="text-emerald-400 font-bold text-xs">{o.value.toLocaleString()} zl</span>
                         <span className="text-slate-500 text-xs">{o.probability}%</span>
                       </div>
                       <div className="h-1 bg-[#0B0F1A] rounded mt-2">
@@ -616,7 +622,7 @@ function Reminders({ reminders, setReminders, clients }) {
               <div className="text-slate-400 text-xs mb-3">{selected.clientName} · Dodano: {selected.date}</div>
               {selected.notes && <div className="text-slate-300 text-xs leading-relaxed mb-3">{selected.notes}</div>}
               <div className="flex gap-2 flex-wrap">
-                <span className="text-xs text-slate-500">Zmień etap:</span>
+                <span className="text-xs text-slate-500">Zmien etap:</span>
                 {stages.map(s => (
                   <button key={s} onClick={() => changeStage(selected.id, s)}
                     className={`text-xs px-2 py-1 rounded-lg font-semibold transition-colors ${selected.stage===s ? `${stageConfig[s].bg} ${stageConfig[s].color} border ${stageConfig[s].border}` : "bg-[#0B0F1A] text-slate-400 hover:text-white"}`}>
@@ -626,9 +632,9 @@ function Reminders({ reminders, setReminders, clients }) {
               </div>
             </div>
             <div className="text-right flex-shrink-0">
-              <div className="text-emerald-400 font-bold text-lg">{selected.value.toLocaleString()} zł</div>
-              <div className="text-slate-400 text-xs mb-3">{selected.probability}% prawdopodobieństwo</div>
-              <button onClick={() => deleteOpp(selected.id)} className="text-xs bg-red-500/10 border border-red-500/20 text-red-400 px-3 py-1.5 rounded-lg">🗑 Usuń</button>
+              <div className="text-emerald-400 font-bold text-lg">{selected.value.toLocaleString()} zl</div>
+              <div className="text-slate-400 text-xs mb-3">{selected.probability}% prawdopodobienstwo</div>
+              <button onClick={() => deleteOpp(selected.id)} className="text-xs bg-red-500/10 border border-red-500/20 text-red-400 px-3 py-1.5 rounded-lg">🗑 Usun</button>
             </div>
           </div>
         )}
@@ -660,7 +666,7 @@ function ActivityModal({ client, onClose, loadActivities, addActivity }) {
   };
 
   const handleAdd = async () => {
-    if (!form.title) { alert("Wpisz tytuł"); return; }
+    if (!form.title) { alert("Wpisz tytul"); return; }
     const result = await addActivity(client.id, form);
     if (result) {
       setActivities(p => [result, ...p]);
@@ -674,12 +680,11 @@ function ActivityModal({ client, onClose, loadActivities, addActivity }) {
       <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between p-5 border-b border-[#1E2D45]">
           <div>
-            <div className="text-white font-bold text-lg">📋 Historia aktywności</div>
+            <div className="text-white font-bold text-lg">📋 Historia aktywnosci</div>
             <div className="text-slate-400 text-xs mt-0.5">{client.name}</div>
           </div>
           <button onClick={onClose} className="text-slate-500 hover:text-white text-xl w-8 h-8 flex items-center justify-center">✕</button>
         </div>
-
         {showForm && (
           <div className="p-4 border-b border-[#1E2D45] flex flex-col gap-3 bg-[#0B0F1A]">
             <div className="grid grid-cols-2 gap-3">
@@ -696,11 +701,11 @@ function ActivityModal({ client, onClose, loadActivities, addActivity }) {
                   className="bg-[#141929] border border-[#1E2D45] rounded-xl px-3 py-2 text-white text-sm outline-none" />
               </div>
             </div>
-            <input placeholder="Tytuł (np. Wysłano ofertę na izolacje)" value={form.title} onChange={e => setForm(f=>({...f, title: e.target.value}))}
+            <input placeholder="Tytul (np. Wyslano oferte na izolacje)" value={form.title} onChange={e => setForm(f=>({...f, title: e.target.value}))}
               className="bg-[#141929] border border-[#1E2D45] rounded-xl px-3 py-2 text-white text-sm outline-none placeholder-slate-600" />
             <textarea placeholder="Opis (opcjonalnie)" value={form.description} onChange={e => setForm(f=>({...f, description: e.target.value}))} rows={2}
               className="bg-[#141929] border border-[#1E2D45] rounded-xl px-3 py-2 text-white text-sm outline-none placeholder-slate-600 resize-none" />
-            <input placeholder="Wartość (zł) — opcjonalnie" type="number" value={form.value} onChange={e => setForm(f=>({...f, value: e.target.value}))}
+            <input placeholder="Wartosc (zl) — opcjonalnie" type="number" value={form.value} onChange={e => setForm(f=>({...f, value: e.target.value}))}
               className="bg-[#141929] border border-[#1E2D45] rounded-xl px-3 py-2 text-white text-sm outline-none placeholder-slate-600" />
             <div className="flex gap-2">
               <button onClick={() => setShowForm(false)} className="flex-1 bg-[#0B0F1A] border border-[#1E2D45] text-slate-400 text-sm py-2 rounded-xl">Anuluj</button>
@@ -708,19 +713,18 @@ function ActivityModal({ client, onClose, loadActivities, addActivity }) {
             </div>
           </div>
         )}
-
         <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
           {!showForm && (
             <button onClick={() => setShowForm(true)} className="w-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm py-2.5 rounded-xl font-semibold hover:bg-blue-500/20 transition-colors">
-              + Dodaj aktywność
+              + Dodaj aktywnosc
             </button>
           )}
-          {loading && <div className="text-slate-400 text-sm text-center py-8">Ładowanie...</div>}
+          {loading && <div className="text-slate-400 text-sm text-center py-8">Ladowanie...</div>}
           {!loading && activities.length === 0 && (
             <div className="text-center py-8">
               <div className="text-4xl mb-3">📋</div>
               <div className="text-white font-semibold">Brak historii</div>
-              <div className="text-slate-400 text-sm mt-1">Dodaj pierwszą aktywność</div>
+              <div className="text-slate-400 text-sm mt-1">Dodaj pierwsza aktywnosc</div>
             </div>
           )}
           {activities.map(a => {
@@ -731,7 +735,7 @@ function ActivityModal({ client, onClose, loadActivities, addActivity }) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2 mb-1">
                     <span className="text-white font-semibold text-sm">{a.title}</span>
-                    {a.value > 0 && <span className="text-emerald-400 font-bold text-sm flex-shrink-0">{Number(a.value).toLocaleString()} zł</span>}
+                    {a.value > 0 && <span className="text-emerald-400 font-bold text-sm flex-shrink-0">{Number(a.value).toLocaleString()} zl</span>}
                   </div>
                   {a.description && <div className="text-slate-400 text-xs mb-1">{a.description}</div>}
                   <div className="flex items-center gap-2">
@@ -750,37 +754,26 @@ function ActivityModal({ client, onClose, loadActivities, addActivity }) {
 
 function GlobalSearch({ clients, reminders, opportunities, onClose, setPage }) {
   const [query, setQuery] = useState("");
-
   const results = query.length < 2 ? [] : [
     ...clients.filter(c => c.name?.toLowerCase().includes(query.toLowerCase()) || c.person?.toLowerCase().includes(query.toLowerCase())).map(c => ({ type: "Klient", icon: "◎", label: c.name, sub: c.person, color: "text-blue-400", action: () => { setPage("clients"); onClose(); }})),
     ...reminders.filter(r => r.title?.toLowerCase().includes(query.toLowerCase()) || r.clientName?.toLowerCase().includes(query.toLowerCase())).map(r => ({ type: "Przypomnienie", icon: "◷", label: r.title, sub: r.clientName, color: "text-yellow-400", action: () => { setPage("reminders"); onClose(); }})),
     ...opportunities.filter(o => o.title?.toLowerCase().includes(query.toLowerCase()) || o.clientName?.toLowerCase().includes(query.toLowerCase())).map(o => ({ type: "Szansa", icon: "◈", label: o.title, sub: o.clientName, color: "text-purple-400", action: () => { setPage("opportunities"); onClose(); }})),
   ];
-
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-start justify-center pt-20 px-4">
       <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl w-full max-w-lg">
         <div className="flex items-center gap-3 px-4 py-3 border-b border-[#1E2D45]">
           <span className="text-slate-400 text-lg">🔍</span>
-          <input
-            autoFocus
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            placeholder="Szukaj klientów, przypomnień, szans..."
-            className="flex-1 bg-transparent outline-none text-white text-sm placeholder-slate-500"
-          />
+          <input autoFocus value={query} onChange={e => setQuery(e.target.value)}
+            placeholder="Szukaj klientow, przypomnien, szans..."
+            className="flex-1 bg-transparent outline-none text-white text-sm placeholder-slate-500" />
           <button onClick={onClose} className="text-slate-500 hover:text-white text-lg">✕</button>
         </div>
         <div className="max-h-80 overflow-y-auto">
-          {query.length < 2 && (
-            <div className="p-6 text-center text-slate-500 text-sm">Wpisz minimum 2 znaki aby wyszukać</div>
-          )}
-          {query.length >= 2 && results.length === 0 && (
-            <div className="p-6 text-center text-slate-500 text-sm">Brak wyników dla "{query}"</div>
-          )}
+          {query.length < 2 && <div className="p-6 text-center text-slate-500 text-sm">Wpisz minimum 2 znaki aby wyszukac</div>}
+          {query.length >= 2 && results.length === 0 && <div className="p-6 text-center text-slate-500 text-sm">Brak wynikow dla "{query}"</div>}
           {results.map((r, i) => (
-            <button key={i} onClick={r.action}
-              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-left border-b border-[#1E2D45] last:border-0">
+            <button key={i} onClick={r.action} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-left border-b border-[#1E2D45] last:border-0">
               <span className={`text-lg ${r.color}`}>{r.icon}</span>
               <div className="flex-1 min-w-0">
                 <div className="text-white text-sm font-medium truncate">{r.label}</div>
@@ -805,128 +798,92 @@ function generateOfferNumber(clientId) {
 }
 
 function OfferPDF({ offer, client, onClose }) {
-  const handlePrint = () => {
-    const printContents = document.getElementById("offer-print-wrapper").innerHTML;
-    const win = window.open("", "_blank");
-    win.document.write(`
-      <html>
-        <head>
-          <title>${offer.number}</title>
-          <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: Arial, sans-serif; padding: 32px; color: #111; }
-            table { width: 100%; border-collapse: collapse; }
-            th { background: #1d4ed8; color: white; padding: 10px 12px; text-align: left; font-size: 13px; }
-            td { padding: 8px 12px; font-size: 13px; border-bottom: 1px solid #e5e7eb; }
-            .text-right { text-align: right; }
-            .text-center { text-align: center; }
-            .font-black { font-weight: 900; }
-            .font-bold { font-weight: 700; }
-            .text-blue-700 { color: #1d4ed8; }
-            .text-3xl { font-size: 28px; }
-            .text-lg { font-size: 18px; }
-            .bg-gray-50 { background: #f9fafb; }
-            .rounded-xl { border-radius: 12px; }
-            .p-4 { padding: 16px; }
-            .mb-8 { margin-bottom: 32px; }
-            .mb-6 { margin-bottom: 24px; }
-            .mb-2 { margin-bottom: 8px; }
-            .mt-8 { margin-top: 32px; }
-            .pt-6 { padding-top: 24px; }
-            .border-t { border-top: 1px solid #e5e7eb; }
-            .border-t-2 { border-top: 2px solid #1d4ed8; }
-            .flex { display: flex; }
-            .justify-between { justify-content: space-between; }
-            .items-end { align-items: flex-end; }
-            .items-start { align-items: flex-start; }
-            .text-gray-500 { color: #6b7280; }
-            .text-gray-400 { color: #9ca3af; }
-            .text-gray-600 { color: #4b5563; }
-            .text-gray-800 { color: #1f2937; }
-            .text-gray-900 { color: #111827; }
-            .text-sm { font-size: 13px; }
-            .text-xs { font-size: 11px; }
-            .uppercase { text-transform: uppercase; }
-            .tracking-wider { letter-spacing: 0.05em; }
-            .w-48 { width: 192px; }
-            .border-t { border-top: 1px solid #9ca3af; }
-            .pt-2 { padding-top: 8px; }
-            tfoot td { font-weight: bold; }
-            @media print { body { padding: 16px; } }
-          </style>
-        </head>
-        <body>${printContents}</body>
-      </html>
-    `);
-    win.document.close();
-    win.focus();
-    win.print();
-    win.close();
-  };
-
-  const handleDownloadPDF = () => {
-    const printContents = document.getElementById("offer-print-wrapper").innerHTML;
-    const win = window.open("", "_blank");
-    win.document.write(`
-      <html>
-        <head>
-          <title>${offer.number}</title>
-          <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: Arial, sans-serif; padding: 32px; color: #111; }
-            table { width: 100%; border-collapse: collapse; }
-            th { background: #1d4ed8; color: white; padding: 10px 12px; text-align: left; font-size: 13px; }
-            td { padding: 8px 12px; font-size: 13px; border-bottom: 1px solid #e5e7eb; }
-            .text-right { text-align: right; }
-            .text-center { text-align: center; }
-            .font-black { font-weight: 900; }
-            .font-bold { font-weight: 700; }
-            .text-blue-700 { color: #1d4ed8; }
-            .text-3xl { font-size: 28px; }
-            .text-lg { font-size: 18px; }
-            .bg-gray-50 { background: #f9fafb; }
-            .rounded-xl { border-radius: 12px; }
-            .p-4 { padding: 16px; }
-            .mb-8 { margin-bottom: 32px; }
-            .mb-6 { margin-bottom: 24px; }
-            .mb-2 { margin-bottom: 8px; }
-            .mt-8 { margin-top: 32px; }
-            .pt-6 { padding-top: 24px; }
-            .border-t { border-top: 1px solid #e5e7eb; }
-            .border-t-2 { border-top: 2px solid #1d4ed8; }
-            .flex { display: flex; }
-            .justify-between { justify-content: space-between; }
-            .items-end { align-items: flex-end; }
-            .items-start { align-items: flex-start; }
-            .text-gray-500 { color: #6b7280; }
-            .text-gray-400 { color: #9ca3af; }
-            .text-gray-600 { color: #4b5563; }
-            .text-gray-800 { color: #1f2937; }
-            .text-gray-900 { color: #111827; }
-            .text-sm { font-size: 13px; }
-            .text-xs { font-size: 11px; }
-            .uppercase { text-transform: uppercase; }
-            .tracking-wider { letter-spacing: 0.05em; }
-            .w-48 { width: 192px; }
-            .pt-2 { padding-top: 8px; }
-            tfoot td { font-weight: bold; }
-          </style>
-          <script>
-            window.onload = function() {
-              window.print();
-              setTimeout(function(){ window.close(); }, 500);
-            }
-          </script>
-        </head>
-        <body>${printContents}</body>
-      </html>
-    `);
-    win.document.close();
-  };
   const total_netto = offer.items.reduce((s, i) => s + (parseFloat(i.netto) || 0), 0);
   const total_brutto = offer.items.reduce((s, i) => s + (parseFloat(i.brutto) || 0), 0);
   const validUntil = new Date();
   validUntil.setDate(validUntil.getDate() + 7);
+
+  const buildHTML = () => {
+    const rows = offer.items.map((item, i) => `
+      <tr style="background:${i % 2 === 0 ? "#ffffff" : "#f9fafb"}">
+        <td style="padding:9px 12px;font-size:13px;border-bottom:1px solid #e5e7eb">${i + 1}</td>
+        <td style="padding:9px 12px;font-size:13px;border-bottom:1px solid #e5e7eb;font-weight:600">${item.product}</td>
+        <td style="padding:9px 12px;font-size:13px;border-bottom:1px solid #e5e7eb;text-align:center">${item.jm}</td>
+        <td style="padding:9px 12px;font-size:13px;border-bottom:1px solid #e5e7eb;text-align:center">${item.qty}</td>
+        <td style="padding:9px 12px;font-size:13px;border-bottom:1px solid #e5e7eb;text-align:right">${parseFloat(item.netto_jm||0).toFixed(2)} zl</td>
+        <td style="padding:9px 12px;font-size:13px;border-bottom:1px solid #e5e7eb;text-align:right">${parseFloat(item.netto||0).toFixed(2)} zl</td>
+        <td style="padding:9px 12px;font-size:13px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:700">${parseFloat(item.brutto||0).toFixed(2)} zl</td>
+      </tr>`).join("");
+
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${offer.number}</title></head>
+    <body style="font-family:Arial,sans-serif;padding:40px;color:#111;font-size:13px;margin:0">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px">
+        <div>
+          <div style="font-size:28px;font-weight:900;color:#1d4ed8">HurtBud</div>
+          <div style="color:#6b7280;font-size:12px;margin-top:4px">Hurtownia Materialow Budowlanych</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:18px;font-weight:700;color:#111">${offer.number}</div>
+          <div style="color:#6b7280;font-size:12px;margin-top:4px">Data: ${new Date().toLocaleDateString("pl-PL")}</div>
+          <div style="color:#6b7280;font-size:12px">Wazna do: ${validUntil.toLocaleDateString("pl-PL")}</div>
+          <div style="color:#6b7280;font-size:12px">Wystawil: ${offer.author}</div>
+        </div>
+      </div>
+      <div style="background:#f9fafb;border-radius:12px;padding:16px;margin-bottom:24px">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:#9ca3af;margin-bottom:8px">Klient</div>
+        <div style="font-size:18px;font-weight:700;margin-bottom:4px">${client?.name || ""}</div>
+        <div style="color:#4b5563;font-size:12px">${client?.person || ""}</div>
+        <div style="color:#4b5563;font-size:12px">${client?.city || ""}</div>
+        <div style="color:#4b5563;font-size:12px">${client?.phone || ""}</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:24px">
+        <thead>
+          <tr style="background:#1d4ed8;color:white">
+            <th style="padding:10px 12px;text-align:left;font-size:12px">Lp.</th>
+            <th style="padding:10px 12px;text-align:left;font-size:12px">Produkt</th>
+            <th style="padding:10px 12px;text-align:center;font-size:12px">JM</th>
+            <th style="padding:10px 12px;text-align:center;font-size:12px">Ilosc</th>
+            <th style="padding:10px 12px;text-align:right;font-size:12px">Cena netto/JM</th>
+            <th style="padding:10px 12px;text-align:right;font-size:12px">Netto total</th>
+            <th style="padding:10px 12px;text-align:right;font-size:12px">Brutto total</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+        <tfoot>
+          <tr style="border-top:2px solid #1d4ed8">
+            <td colspan="5" style="padding:12px;text-align:right;font-weight:700;font-size:13px">RAZEM:</td>
+            <td style="padding:12px;text-align:right;font-weight:700;font-size:13px">${total_netto.toFixed(2)} zl</td>
+            <td style="padding:12px;text-align:right;font-weight:900;font-size:16px;color:#1d4ed8">${total_brutto.toFixed(2)} zl</td>
+          </tr>
+        </tfoot>
+      </table>
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;padding-top:24px;border-top:1px solid #e5e7eb;margin-top:32px">
+        <div style="font-size:11px;color:#9ca3af">Oferta wazna 7 dni od daty wystawienia</div>
+        <div style="text-align:center">
+          <div style="font-family:cursive;font-size:20px;color:#1d4ed8;margin-bottom:4px">${offer.author}</div>
+          <div style="width:180px;border-top:1px solid #9ca3af;padding-top:6px;font-size:11px;color:#6b7280;margin:0 auto">${offer.author}</div>
+        </div>
+      </div>
+    </body></html>`;
+  };
+
+  const handlePrint = () => {
+    const win = window.open("", "_blank");
+    win.document.write(buildHTML());
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); }, 300);
+  };
+
+  const handleDownloadPDF = () => {
+    const blob = new Blob([buildHTML()], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${offer.number}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -937,19 +894,19 @@ function OfferPDF({ offer, client, onClose }) {
             <button onClick={handlePrint} className="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm px-4 py-2 rounded-xl transition-colors">🖨️ Drukuj</button>
             <button onClick={onClose} className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold text-sm px-4 py-2 rounded-xl transition-colors">✕ Zamknij</button>
           </div>
-          <div className="text-gray-500 text-xs">PDF → wybierz "Zapisz jako PDF"</div>
+          <div className="text-gray-500 text-xs">Pobierz PDF → "Zapisz jako PDF"</div>
         </div>
-        <div id="offer-print-wrapper" className="p-8">
+        <div className="p-8">
           <div className="flex justify-between items-start mb-8">
             <div>
               <div className="text-3xl font-black text-blue-700">HurtBud</div>
-              <div className="text-gray-500 text-sm mt-1">Hurtownia Materiałów Budowlanych</div>
+              <div className="text-gray-500 text-sm mt-1">Hurtownia Materialow Budowlanych</div>
             </div>
             <div className="text-right">
               <div className="text-gray-800 font-bold text-lg">{offer.number}</div>
               <div className="text-gray-500 text-sm">Data: {new Date().toLocaleDateString("pl-PL")}</div>
-              <div className="text-gray-500 text-sm">Ważna do: {validUntil.toLocaleDateString("pl-PL")}</div>
-              <div className="text-gray-500 text-sm">Wystawił: {offer.author}</div>
+              <div className="text-gray-500 text-sm">Wazna do: {validUntil.toLocaleDateString("pl-PL")}</div>
+              <div className="text-gray-500 text-sm">Wystawil: {offer.author}</div>
             </div>
           </div>
           <div className="bg-gray-50 rounded-xl p-4 mb-6">
@@ -962,12 +919,13 @@ function OfferPDF({ offer, client, onClose }) {
           <table className="w-full mb-6">
             <thead>
               <tr className="bg-blue-700 text-white">
-                <th className="py-3 px-3 text-left text-sm font-semibold rounded-tl-lg">Lp.</th>
+                <th className="py-3 px-3 text-left text-sm font-semibold">Lp.</th>
                 <th className="py-3 px-3 text-left text-sm font-semibold">Produkt</th>
                 <th className="py-3 px-3 text-center text-sm font-semibold">JM</th>
-                <th className="py-3 px-3 text-center text-sm font-semibold">Ilość</th>
-                <th className="py-3 px-3 text-right text-sm font-semibold">Netto</th>
-                <th className="py-3 px-3 text-right text-sm font-semibold rounded-tr-lg">Brutto</th>
+                <th className="py-3 px-3 text-center text-sm font-semibold">Ilosc</th>
+                <th className="py-3 px-3 text-right text-sm font-semibold">Cena netto/JM</th>
+                <th className="py-3 px-3 text-right text-sm font-semibold">Netto total</th>
+                <th className="py-3 px-3 text-right text-sm font-semibold">Brutto total</th>
               </tr>
             </thead>
             <tbody>
@@ -977,24 +935,25 @@ function OfferPDF({ offer, client, onClose }) {
                   <td className="py-2.5 px-3 text-sm text-gray-900 font-medium">{item.product}</td>
                   <td className="py-2.5 px-3 text-sm text-gray-600 text-center">{item.jm}</td>
                   <td className="py-2.5 px-3 text-sm text-gray-600 text-center">{item.qty}</td>
-                  <td className="py-2.5 px-3 text-sm text-gray-900 text-right">{parseFloat(item.netto || 0).toLocaleString("pl-PL", {minimumFractionDigits: 2})} zł</td>
-                  <td className="py-2.5 px-3 text-sm text-gray-900 font-semibold text-right">{parseFloat(item.brutto || 0).toLocaleString("pl-PL", {minimumFractionDigits: 2})} zł</td>
+                  <td className="py-2.5 px-3 text-sm text-gray-900 text-right">{parseFloat(item.netto_jm||0).toFixed(2)} zl</td>
+                  <td className="py-2.5 px-3 text-sm text-gray-900 text-right">{parseFloat(item.netto||0).toFixed(2)} zl</td>
+                  <td className="py-2.5 px-3 text-sm font-bold text-gray-900 text-right">{parseFloat(item.brutto||0).toFixed(2)} zl</td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
               <tr className="border-t-2 border-blue-700">
-                <td colSpan={4} className="py-3 px-3 text-right font-bold text-gray-800">RAZEM:</td>
-                <td className="py-3 px-3 text-right font-bold text-gray-900">{total_netto.toLocaleString("pl-PL", {minimumFractionDigits: 2})} zł</td>
-                <td className="py-3 px-3 text-right font-black text-blue-700 text-lg">{total_brutto.toLocaleString("pl-PL", {minimumFractionDigits: 2})} zł</td>
+                <td colSpan={5} className="py-3 px-3 text-right font-bold text-gray-800">RAZEM:</td>
+                <td className="py-3 px-3 text-right font-bold text-gray-900">{total_netto.toFixed(2)} zl</td>
+                <td className="py-3 px-3 text-right font-black text-blue-700 text-lg">{total_brutto.toFixed(2)} zl</td>
               </tr>
             </tfoot>
           </table>
           <div className="flex justify-between items-end mt-8 pt-6 border-t border-gray-200">
-            <div className="text-gray-400 text-xs">Oferta ważna 7 dni od daty wystawienia</div>
+            <div className="text-gray-400 text-xs">Oferta wazna 7 dni od daty wystawienia</div>
             <div className="text-center">
-              <div className="text-gray-800 font-bold text-base mb-1" style={{fontFamily: "cursive"}}>{offer.author}</div>
-              <div className="w-48 border-t border-gray-400 pt-2 text-gray-500 text-xs">{offer.author}</div>
+              <div className="text-blue-700 font-bold text-xl mb-1" style={{fontFamily:"cursive"}}>{offer.author}</div>
+              <div className="w-48 border-t border-gray-400 pt-2 text-gray-500 text-xs mx-auto">{offer.author}</div>
             </div>
           </div>
         </div>
@@ -1009,7 +968,17 @@ function Offers({ clients }) {
   const [selectedClient, setSelectedClient] = useState(clients[0] || null);
   const [previewOffer, setPreviewOffer] = useState(null);
   const [editOffer, setEditOffer] = useState(null);
-  const [items, setItems] = useState([{ product: "", jm: "szt", qty: "", netto: "", brutto: "" }]);
+  const [items, setItems] = useState([{ product: "", jm: "szt", qty: "", netto_jm: "", netto: "", brutto: "" }]);
+  const [loadingOffers, setLoadingOffers] = useState(true);
+
+  useEffect(() => { loadOffers(); }, []);
+
+  async function loadOffers() {
+    setLoadingOffers(true);
+    const { data } = await supabase.from("offers").select("*").order("created_at", { ascending: false });
+    if (data) setOffers(data.map(o => ({ ...o, client: o.client_data, items: o.items || [] })));
+    setLoadingOffers(false);
+  }
 
   const jmOptions = ["szt", "m2", "m3", "opak", "mb", "kg", "t"];
 
@@ -1020,7 +989,6 @@ function Offers({ clients }) {
       const item = updated[index];
       const qty = parseFloat(item.qty) || 1;
       if (field === "netto_jm") {
-        updated[index].netto_jm = value;
         const nettoTotal = (parseFloat(value) || 0) * qty;
         updated[index].netto = nettoTotal.toFixed(2);
         updated[index].brutto = (nettoTotal * 1.23).toFixed(2);
@@ -1031,42 +999,64 @@ function Offers({ clients }) {
         updated[index].netto = nettoTotal.toFixed(2);
         updated[index].brutto = (nettoTotal * 1.23).toFixed(2);
       }
-      if (field === "brutto_jm") {
-        updated[index].brutto_jm = value;
-        const bruttoTotal = (parseFloat(value) || 0) * qty;
-        updated[index].brutto = bruttoTotal.toFixed(2);
-        updated[index].netto = (bruttoTotal / 1.23).toFixed(2);
-      }
       return updated;
     });
   };
 
-  const addItem = () => setItems(prev => [...prev, { product: "", jm: "szt", qty: "", netto: "", brutto: "" }]);
+  const addItem = () => setItems(prev => [...prev, { product: "", jm: "szt", qty: "", netto_jm: "", netto: "", brutto: "" }]);
   const removeItem = (i) => setItems(prev => prev.filter((_, idx) => idx !== i));
 
   const total_netto = items.reduce((s, i) => s + (parseFloat(i.netto) || 0), 0);
   const total_brutto = items.reduce((s, i) => s + (parseFloat(i.brutto) || 0), 0);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!selectedClient) { alert("Wybierz klienta"); return; }
-    if (items.every(i => !i.product)) { alert("Dodaj przynajmniej jedną pozycję"); return; }
-    const offerData = {
-      id: editOffer ? editOffer.id : Date.now(),
-      number: editOffer ? editOffer.number : generateOfferNumber(selectedClient.id),
-      client: selectedClient,
-      items: items.filter(i => i.product),
-      author: "Piotr Handlowiec",
-      date: new Date().toISOString(),
-    };
+    if (items.every(i => !i.product)) { alert("Dodaj przynajmniej jedna pozycje"); return; }
+    const filteredItems = items.filter(i => i.product);
+    const total_netto = filteredItems.reduce((s, i) => s + (parseFloat(i.netto) || 0), 0);
+    const total_brutto = filteredItems.reduce((s, i) => s + (parseFloat(i.brutto) || 0), 0);
+
     if (editOffer) {
-      setOffers(prev => prev.map(o => o.id === editOffer.id ? offerData : o));
+      const { data, error } = await supabase.from("offers").update({
+        items: filteredItems,
+        client_data: selectedClient,
+        client_name: selectedClient.name,
+        total_netto,
+        total_brutto,
+      }).eq("id", editOffer.id).select();
+      if (error) { alert("Blad zapisu: " + error.message); return; }
+      if (data) {
+        const updated = { ...data[0], client: data[0].client_data, items: data[0].items || [] };
+        setOffers(prev => prev.map(o => o.id === editOffer.id ? updated : o));
+        setPreviewOffer(updated);
+      }
     } else {
-      setOffers(prev => [offerData, ...prev]);
+      const { data, error } = await supabase.from("offers").insert([{
+        number: generateOfferNumber(selectedClient.id),
+        client_id: selectedClient.id,
+        client_name: selectedClient.name,
+        client_data: selectedClient,
+        items: filteredItems,
+        author: "Piotr Handlowiec",
+        total_netto,
+        total_brutto,
+      }]).select();
+      if (error) { alert("Blad zapisu: " + error.message); return; }
+      if (data) {
+        const newOffer = { ...data[0], client: data[0].client_data, items: data[0].items || [] };
+        setOffers(prev => [newOffer, ...prev]);
+        setPreviewOffer(newOffer);
+      }
     }
-    setPreviewOffer(offerData);
     setShowCreate(false);
     setEditOffer(null);
-    setItems([{ product: "", jm: "szt", qty: "", netto: "", brutto: "" }]);
+    setItems([{ product: "", jm: "szt", qty: "", netto_jm: "", netto: "", brutto: "" }]);
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Usunac te oferte?")) return;
+    await supabase.from("offers").delete().eq("id", id);
+    setOffers(prev => prev.filter(o => o.id !== id));
   };
 
   const handleEdit = (offer) => {
@@ -1082,19 +1072,24 @@ function Offers({ clients }) {
       <div className="flex flex-col gap-4 h-full">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-white font-bold text-lg">📄 Oferty</div>
+            <div className="text-white font-bold text-lg">◱ Oferty</div>
             <div className="text-slate-400 text-xs mt-0.5">{offers.length} wystawionych ofert</div>
           </div>
-          <button onClick={() => { setShowCreate(true); setEditOffer(null); setItems([{ product: "", jm: "szt", qty: "", netto: "", brutto: "" }]); }}
+          <button onClick={() => { setShowCreate(true); setEditOffer(null); setItems([{ product: "", jm: "szt", qty: "", netto_jm: "", netto: "", brutto: "" }]); }}
             className="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors">+ Nowa oferta</button>
         </div>
 
         {showCreate && (
           <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl p-5 flex flex-col gap-4">
-            <div className="text-white font-bold text-sm">{editOffer ? "✏️ Edytuj ofertę" : "➕ Nowa oferta"}</div>
+            <div className="text-white font-bold text-sm">{editOffer ? "✏️ Edytuj oferte" : "➕ Nowa oferta"}</div>
             <div className="flex flex-col gap-1.5">
               <label className="text-slate-400 text-xs uppercase tracking-wider">Klient</label>
-              <select value={selectedClient?.id || ""} onChange={e => setSelectedClient(clients.find(c => c.id === e.target.value) || clients.find(c => String(c.id) === e.target.value))}
+              <select
+                value={selectedClient?.id || ""}
+                onChange={e => {
+                  const found = clients.find(c => String(c.id) === String(e.target.value));
+                  setSelectedClient(found || null);
+                }}
                 className="bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-blue-500">
                 {clients.map(c => <option key={c.id} value={c.id}>{c.name} — {c.person}</option>)}
               </select>
@@ -1103,7 +1098,7 @@ function Offers({ clients }) {
               <div className="grid grid-cols-12 gap-2 text-slate-400 text-xs uppercase tracking-wider px-1">
                 <div className="col-span-3">Produkt</div>
                 <div className="col-span-1">JM</div>
-                <div className="col-span-1">Ilość</div>
+                <div className="col-span-1">Ilosc</div>
                 <div className="col-span-2">Netto/JM</div>
                 <div className="col-span-2">Netto total</div>
                 <div className="col-span-2">Brutto total</div>
@@ -1131,12 +1126,12 @@ function Offers({ clients }) {
                   </div>
                   <div className="col-span-2">
                     <div className="w-full bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-2 py-2 text-slate-300 text-sm">
-                      {parseFloat(item.netto || 0).toFixed(2)} zł
+                      {parseFloat(item.netto || 0).toFixed(2)} zl
                     </div>
                   </div>
                   <div className="col-span-2">
                     <div className="w-full bg-[#0B0F1A] border border-emerald-500/20 rounded-xl px-2 py-2 text-emerald-400 text-sm font-semibold">
-                      {parseFloat(item.brutto || 0).toFixed(2)} zł
+                      {parseFloat(item.brutto || 0).toFixed(2)} zl
                     </div>
                   </div>
                   <div className="col-span-1 flex justify-center">
@@ -1148,48 +1143,52 @@ function Offers({ clients }) {
               ))}
               <button onClick={addItem} className="flex items-center gap-2 text-blue-400 text-sm font-semibold hover:text-blue-300 transition-colors py-1">
                 <span className="w-7 h-7 bg-blue-500/20 border border-blue-500/30 rounded-lg flex items-center justify-center font-bold">+</span>
-                Dodaj pozycję
+                Dodaj pozycje
               </button>
             </div>
             <div className="bg-[#0B0F1A] rounded-xl p-4 flex justify-between items-center">
               <div className="text-slate-400 text-sm">Podsumowanie</div>
               <div className="text-right">
-                <div className="text-slate-300 text-sm">Netto: <span className="text-white font-bold">{total_netto.toLocaleString("pl-PL", {minimumFractionDigits: 2})} zł</span></div>
-                <div className="text-slate-300 text-sm">Brutto: <span className="text-emerald-400 font-black text-lg">{total_brutto.toLocaleString("pl-PL", {minimumFractionDigits: 2})} zł</span></div>
+                <div className="text-slate-300 text-sm">Netto: <span className="text-white font-bold">{total_netto.toLocaleString("pl-PL", {minimumFractionDigits: 2})} zl</span></div>
+                <div className="text-slate-300 text-sm">Brutto: <span className="text-emerald-400 font-black text-lg">{total_brutto.toLocaleString("pl-PL", {minimumFractionDigits: 2})} zl</span></div>
               </div>
             </div>
             <div className="flex gap-3">
               <button onClick={() => { setShowCreate(false); setEditOffer(null); }} className="flex-1 bg-[#0B0F1A] border border-[#1E2D45] text-slate-400 font-semibold text-sm py-3 rounded-xl">Anuluj</button>
-              <button onClick={handleSave} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm py-3 rounded-xl transition-colors">✓ Generuj ofertę</button>
+              <button onClick={handleSave} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm py-3 rounded-xl transition-colors">✓ Generuj oferte</button>
             </div>
           </div>
         )}
 
         <div className="flex flex-col gap-3 overflow-y-auto flex-1">
-          {offers.length === 0 && !showCreate && (
+          {loadingOffers && (
+            <div className="text-center py-16 text-slate-400 text-sm">Ladowanie ofert...</div>
+          )}
+          {!loadingOffers && offers.length === 0 && !showCreate && (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
               <div className="text-4xl">📄</div>
               <div className="text-white font-semibold">Brak ofert</div>
-              <div className="text-slate-400 text-sm">Kliknij "+ Nowa oferta" aby zacząć</div>
+              <div className="text-slate-400 text-sm">Kliknij "+ Nowa oferta" aby zaczac</div>
             </div>
           )}
           {offers.map(offer => {
-            const total = offer.items.reduce((s, i) => s + (parseFloat(i.brutto) || 0), 0);
+            const total = offer.total_brutto || offer.items.reduce((s, i) => s + (parseFloat(i.brutto) || 0), 0);
             return (
               <div key={offer.id} className="bg-[#141929] border border-[#1E2D45] rounded-xl p-4 flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400 flex-shrink-0">📄</div>
+                <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400 flex-shrink-0">◱</div>
                 <div className="flex-1 min-w-0">
                   <div className="text-white font-bold text-sm">{offer.number}</div>
-                  <div className="text-slate-400 text-xs">{offer.client?.name} · {new Date(offer.date).toLocaleDateString("pl-PL")}</div>
+                  <div className="text-slate-400 text-xs">{offer.client_name} · {new Date(offer.created_at).toLocaleDateString("pl-PL")}</div>
                   <div className="text-slate-500 text-xs">{offer.items.length} pozycji</div>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <div className="text-emerald-400 font-black text-base">{total.toLocaleString("pl-PL", {minimumFractionDigits: 2})} zł</div>
+                  <div className="text-emerald-400 font-black text-base">{Number(total).toLocaleString("pl-PL", {minimumFractionDigits: 2})} zl</div>
                   <div className="text-slate-500 text-xs">brutto</div>
                 </div>
                 <div className="flex gap-2 flex-shrink-0">
                   <button onClick={() => setPreviewOffer(offer)} className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm">👁</button>
                   <button onClick={() => handleEdit(offer)} className="w-9 h-9 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-sm">✏️</button>
+                  <button onClick={() => handleDelete(offer.id)} className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">🗑</button>
                 </div>
               </div>
             );
@@ -1208,8 +1207,8 @@ function LostClients({ clients }) {
       {lost.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 gap-3">
           <div className="text-4xl">🎉</div>
-          <div className="text-white font-semibold">Brak utraconych klientów!</div>
-          <div className="text-slate-400 text-sm">Świetna robota!</div>
+          <div className="text-white font-semibold">Brak utraconych klientow!</div>
+          <div className="text-slate-400 text-sm">Swietna robota!</div>
         </div>
       ) : (
         lost.map(c => (
@@ -1236,7 +1235,6 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [notifOpen, setNotifOpen] = useState(false);
 
   useEffect(() => { loadAll(); }, []);
@@ -1268,7 +1266,7 @@ export default function App() {
       value: activity.value || 0,
       date: activity.date || new Date().toISOString(),
     }]).select();
-    if (error) { alert("Błąd zapisu: " + error.message); return null; }
+    if (error) { alert("Blad zapisu: " + error.message); return null; }
     return data?.[0];
   }
 
@@ -1276,7 +1274,7 @@ export default function App() {
 
   const pages = {
     dashboard: <Dashboard clients={clients} reminders={reminders} opportunities={opportunities} />,
-    clients: <Clients clients={clients} setClients={setClients} loadActivities={loadActivities} addActivity={addActivity} />,
+    clients: <Clients clients={clients} setClients={setClients} loadActivities={loadActivities} addActivity={addActivity} setPage={setPage} />,
     reminders: <Reminders reminders={reminders} setReminders={setReminders} clients={clients} />,
     opportunities: <Opportunities opportunities={opportunities} setOpportunities={setOpportunities} clients={clients} />,
     offers: <Offers clients={clients} />,
@@ -1285,7 +1283,8 @@ export default function App() {
 
   const pageLabels = {
     dashboard: "Dashboard", clients: "Klienci",
-    reminders: "Przypomnienia", opportunities: "Szanse sprzedaży", lost: "Utraceni klienci",
+    reminders: "Przypomnienia", opportunities: "Szanse sprzedazy",
+    offers: "Oferty", lost: "Utraceni klienci",
   };
 
   if (menuOpen) return (
@@ -1318,7 +1317,7 @@ export default function App() {
             <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center text-blue-400 font-bold">P</div>
             <div>
               <div className="text-white text-sm font-semibold">Piotr Handlowiec</div>
-              <div className="text-slate-500 text-xs">Region Południe</div>
+              <div className="text-slate-500 text-xs">Region Poludnie</div>
             </div>
           </div>
         </div>
@@ -1331,8 +1330,8 @@ export default function App() {
     <div className="flex h-screen bg-[#0B0F1A] items-center justify-center">
       <div className="text-center">
         <div className="text-4xl mb-4">🏗️</div>
-        <div className="text-white font-bold text-lg">Ładowanie BuildCRM...</div>
-        <div className="text-slate-400 text-sm mt-2">Łączenie z bazą danych</div>
+        <div className="text-white font-bold text-lg">Ladowanie BuildCRM...</div>
+        <div className="text-slate-400 text-sm mt-2">Laczenie z baza danych</div>
       </div>
     </div>
   );
@@ -1340,13 +1339,8 @@ export default function App() {
   return (
     <div className="flex flex-col-reverse md:flex-row h-screen bg-[#0B0F1A] font-sans overflow-hidden">
       {searchOpen && (
-        <GlobalSearch
-          clients={clients}
-          reminders={reminders}
-          opportunities={opportunities}
-          onClose={() => setSearchOpen(false)}
-          setPage={setPage}
-        />
+        <GlobalSearch clients={clients} reminders={reminders} opportunities={opportunities}
+          onClose={() => setSearchOpen(false)} setPage={setPage} />
       )}
       <div className="hidden md:flex w-52 bg-[#141929] border-r border-[#1E2D45] flex-col py-6 flex-shrink-0">
         <div className="px-5 pb-6 border-b border-[#1E2D45]">
@@ -1375,7 +1369,7 @@ export default function App() {
             <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center text-blue-400 font-bold text-sm">P</div>
             <div>
               <div className="text-white text-xs font-semibold">Piotr Handlowiec</div>
-              <div className="text-slate-500 text-xs">Region Południe</div>
+              <div className="text-slate-500 text-xs">Region Poludnie</div>
             </div>
           </div>
         </div>
@@ -1404,12 +1398,13 @@ export default function App() {
                   </div>
                   <div className="max-h-80 overflow-y-auto">
                     {reminders.filter(r => !r.done).length === 0 ? (
-                      <div className="p-6 text-center text-slate-500 text-sm">Brak oczekujących przypomnień 🎉</div>
+                      <div className="p-6 text-center text-slate-500 text-sm">Brak oczekujacych przypomnien 🎉</div>
                     ) : (
                       reminders.filter(r => !r.done).slice(0, 8).map(r => {
-                        const pr = priorityConfig[r.priority];
+                        const pr = priorityConfig[r.priority] || priorityConfig["Sredni"];
                         return (
-                          <div key={r.id} onClick={() => { setPage("reminders"); setNotifOpen(false); }} className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 cursor-pointer border-b border-[#1E2D45] last:border-0 transition-colors">
+                          <div key={r.id} onClick={() => { setPage("reminders"); setNotifOpen(false); }}
+                            className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 cursor-pointer border-b border-[#1E2D45] last:border-0 transition-colors">
                             <div className={`w-2 h-2 rounded-full flex-shrink-0 ${pr.dot}`} />
                             <div className="flex-1 min-w-0">
                               <div className="text-white text-sm font-medium truncate">{r.title}</div>
@@ -1422,7 +1417,8 @@ export default function App() {
                     )}
                   </div>
                   <div className="px-4 py-3 border-t border-[#1E2D45]">
-                    <button onClick={() => { setPage("reminders"); setNotifOpen(false); }} className="w-full text-blue-400 text-sm font-semibold hover:text-blue-300 transition-colors">
+                    <button onClick={() => { setPage("reminders"); setNotifOpen(false); }}
+                      className="w-full text-blue-400 text-sm font-semibold hover:text-blue-300 transition-colors">
                       Zobacz wszystkie →
                     </button>
                   </div>
