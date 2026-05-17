@@ -42,7 +42,7 @@ const navItems = [
   { id: "clients", icon: "◎", label: "Klienci" },
   { id: "reminders", icon: "◷", label: "Przypomnienia" },
   { id: "opportunities", icon: "◈", label: "Szanse" },
-  { id: "offers", icon: "📄", label: "Oferty" },
+  { id: "offers", icon: "◱", label: "Oferty" },
   { id: "lost", icon: "⊗", label: "Utraceni" },
 ];
 
@@ -800,12 +800,28 @@ function generateOfferNumber(clientId) {
   const day = String(now.getDate()).padStart(2, "0");
   const month = String(now.getMonth() + 1).padStart(2, "0");
   const year = String(now.getFullYear()).slice(-2);
-  const clientNum = String(clientId || "000").slice(-3).padStart(3, "0");
-  return `OF/${day}${month}/${clientNum}/${year}`;
+  const clientNum = String(clientId || "001").slice(-3).padStart(3, "0");
+  return `OF/${clientNum}/${day}${month}/${year}`;
 }
 
 function OfferPDF({ offer, client, onClose }) {
-  const handlePrint = () => window.print();
+  const handlePrint = () => {
+    const style = document.createElement("style");
+    style.id = "print-style";
+    style.innerHTML = `
+      @media print {
+        body > * { display: none !important; }
+        #offer-print-wrapper { display: block !important; }
+        #offer-print-wrapper * { display: revert !important; }
+      }
+    `;
+    document.head.appendChild(style);
+    window.print();
+    setTimeout(() => {
+      const el = document.getElementById("print-style");
+      if (el) el.remove();
+    }, 1000);
+  };
   const total_netto = offer.items.reduce((s, i) => s + (parseFloat(i.netto) || 0), 0);
   const total_brutto = offer.items.reduce((s, i) => s + (parseFloat(i.brutto) || 0), 0);
   const validUntil = new Date();
@@ -821,7 +837,7 @@ function OfferPDF({ offer, client, onClose }) {
           </div>
           <div className="text-gray-500 text-xs">Użyj Ctrl+P → Zapisz jako PDF</div>
         </div>
-        <div id="offer-print" className="p-8">
+        <div id="offer-print-wrapper" className="p-8">
           <div className="flex justify-between items-start mb-8">
             <div>
               <div className="text-3xl font-black text-blue-700">HurtBud</div>
@@ -898,11 +914,25 @@ function Offers({ clients }) {
     setItems(prev => {
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: value };
-      if (field === "netto") {
-        updated[index].brutto = (parseFloat(value) * 1.23).toFixed(2);
+      const item = updated[index];
+      const qty = parseFloat(item.qty) || 1;
+      if (field === "netto_jm") {
+        updated[index].netto_jm = value;
+        const nettoTotal = (parseFloat(value) || 0) * qty;
+        updated[index].netto = nettoTotal.toFixed(2);
+        updated[index].brutto = (nettoTotal * 1.23).toFixed(2);
       }
-      if (field === "brutto") {
-        updated[index].netto = (parseFloat(value) / 1.23).toFixed(2);
+      if (field === "qty") {
+        const nettoJm = parseFloat(item.netto_jm) || 0;
+        const nettoTotal = nettoJm * (parseFloat(value) || 1);
+        updated[index].netto = nettoTotal.toFixed(2);
+        updated[index].brutto = (nettoTotal * 1.23).toFixed(2);
+      }
+      if (field === "brutto_jm") {
+        updated[index].brutto_jm = value;
+        const bruttoTotal = (parseFloat(value) || 0) * qty;
+        updated[index].brutto = bruttoTotal.toFixed(2);
+        updated[index].netto = (bruttoTotal / 1.23).toFixed(2);
       }
       return updated;
     });
@@ -968,20 +998,21 @@ function Offers({ clients }) {
             </div>
             <div className="flex flex-col gap-3">
               <div className="grid grid-cols-12 gap-2 text-slate-400 text-xs uppercase tracking-wider px-1">
-                <div className="col-span-4">Produkt</div>
-                <div className="col-span-2">JM</div>
+                <div className="col-span-3">Produkt</div>
+                <div className="col-span-1">JM</div>
                 <div className="col-span-1">Ilość</div>
-                <div className="col-span-2">Netto</div>
-                <div className="col-span-2">Brutto</div>
+                <div className="col-span-2">Netto/JM</div>
+                <div className="col-span-2">Netto total</div>
+                <div className="col-span-2">Brutto total</div>
                 <div className="col-span-1"></div>
               </div>
               {items.map((item, i) => (
                 <div key={i} className="grid grid-cols-12 gap-2 items-center">
-                  <div className="col-span-4">
+                  <div className="col-span-3">
                     <input value={item.product} onChange={e => handleItemChange(i, "product", e.target.value)}
                       placeholder="Nazwa produktu" className="w-full bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-3 py-2 text-white text-sm outline-none focus:border-blue-500 placeholder-slate-600" />
                   </div>
-                  <div className="col-span-2">
+                  <div className="col-span-1">
                     <select value={item.jm} onChange={e => handleItemChange(i, "jm", e.target.value)}
                       className="w-full bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-2 py-2 text-white text-sm outline-none focus:border-blue-500">
                       {jmOptions.map(j => <option key={j} value={j}>{j}</option>)}
@@ -992,12 +1023,18 @@ function Offers({ clients }) {
                       type="number" placeholder="0" className="w-full bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-2 py-2 text-white text-sm outline-none focus:border-blue-500 placeholder-slate-600" />
                   </div>
                   <div className="col-span-2">
-                    <input value={item.netto} onChange={e => handleItemChange(i, "netto", e.target.value)}
+                    <input value={item.netto_jm || ""} onChange={e => handleItemChange(i, "netto_jm", e.target.value)}
                       type="number" placeholder="0.00" className="w-full bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-2 py-2 text-white text-sm outline-none focus:border-blue-500 placeholder-slate-600" />
                   </div>
                   <div className="col-span-2">
-                    <input value={item.brutto} onChange={e => handleItemChange(i, "brutto", e.target.value)}
-                      type="number" placeholder="0.00" className="w-full bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-2 py-2 text-white text-sm outline-none focus:border-blue-500 placeholder-slate-600" />
+                    <div className="w-full bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-2 py-2 text-slate-300 text-sm">
+                      {parseFloat(item.netto || 0).toFixed(2)} zł
+                    </div>
+                  </div>
+                  <div className="col-span-2">
+                    <div className="w-full bg-[#0B0F1A] border border-emerald-500/20 rounded-xl px-2 py-2 text-emerald-400 text-sm font-semibold">
+                      {parseFloat(item.brutto || 0).toFixed(2)} zł
+                    </div>
                   </div>
                   <div className="col-span-1 flex justify-center">
                     {items.length > 1 && (
