@@ -208,7 +208,7 @@ function ClientModal({ onClose, onSave, initialData = null }) {
 }
 
 function AddReminderModal({ onClose, onAdd, clients }) {
-  const today = new Date().toISOString().split("T")[0];
+  const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })();
   const [form, setForm] = useState({
     clientName: clients[0]?.name || "",
     title: "", date: today, time: "10:00",
@@ -317,7 +317,7 @@ function AddOpportunityModal({ onClose, onAdd, clients }) {
 }
 
 function Dashboard({ clients, reminders, opportunities, userProfile, profiles }) {
-  const today = new Date().toISOString().split("T")[0];
+  const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })();
   const now = new Date();
   const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -717,7 +717,7 @@ function Clients({ clients, setClients, loadActivities, addActivity, setPage }) 
 function Reminders({ reminders, setReminders, clients }) {
   const [showAdd, setShowAdd] = useState(false);
   const [filterTab, setFilterTab] = useState("all");
-  const today = new Date().toISOString().split("T")[0];
+  const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })();
   const filtered = reminders.filter(r => {
     if (filterTab === "today") return r.date === today && !r.done;
     if (filterTab === "pending") return !r.done;
@@ -1476,16 +1476,16 @@ function AddEventModal({ onClose, onAdd, clients, initialDate = "" }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl w-full max-w-md">
-        <div className="flex items-center justify-between p-5 border-b border-[#1E2D45]">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-4 pb-0 md:pb-4">
+      <div className="bg-[#141929] border border-[#1E2D45] rounded-t-2xl md:rounded-2xl w-full max-w-md max-h-[92vh] flex flex-col">
+        <div className="flex items-center justify-between p-5 border-b border-[#1E2D45] flex-shrink-0">
           <div>
             <div className="text-white font-bold text-lg">➕ Nowe wydarzenie</div>
             <div className="text-slate-400 text-xs mt-0.5">Dodaj do kalendarza</div>
           </div>
           <button onClick={onClose} className="text-slate-500 hover:text-white text-xl w-8 h-8 flex items-center justify-center">✕</button>
         </div>
-        <div className="p-5 flex flex-col gap-4">
+        <div className="p-5 flex flex-col gap-4 overflow-y-auto flex-1">
           <div className="flex flex-col gap-1.5">
             <label className="text-slate-400 text-xs uppercase tracking-wider">Typ wydarzenia</label>
             <div className="grid grid-cols-2 gap-2">
@@ -1605,7 +1605,7 @@ function Calendar({ reminders, setReminders, clients }) {
   };
   const weekDays = getWeekDays();
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })();
 
   const getEventType = (r) => {
     if (r.event_type && EVENT_TYPES[r.event_type]) return EVENT_TYPES[r.event_type];
