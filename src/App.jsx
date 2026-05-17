@@ -1403,6 +1403,7 @@ function ProfileModal({ session, onClose }) {
 function AdminPanel({ session, onClose }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState("all");
 
   useEffect(() => { loadUsers(); }, []);
 
@@ -1417,37 +1418,76 @@ function AdminPanel({ session, onClose }) {
     setUsers(prev => prev.map(u => u.id === userId ? {...u, role} : u));
   };
 
+  const toggleApprove = async (userId, approved) => {
+    await supabase.from("profiles").update({ approved }).eq("id", userId);
+    setUsers(prev => prev.map(u => u.id === userId ? {...u, approved} : u));
+  };
+
+  const pending = users.filter(u => !u.approved);
+  const approved = users.filter(u => u.approved);
+  const shown = tab === "pending" ? pending : tab === "approved" ? approved : users;
+
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-5 border-b border-[#1E2D45]">
           <div>
             <div className="text-white font-bold text-lg">👑 Panel administratora</div>
-            <div className="text-slate-400 text-xs mt-0.5">{users.length} uzytkownikow w systemie</div>
+            <div className="text-slate-400 text-xs mt-0.5">{users.length} uzytkownikow · {pending.length} oczekuje na zatwierdzenie</div>
           </div>
           <button onClick={onClose} className="text-slate-500 hover:text-white text-xl w-8 h-8 flex items-center justify-center">✕</button>
         </div>
+        <div className="flex gap-2 px-5 pt-4">
+          {[["all","Wszyscy"],["pending","Oczekujacy"],["approved","Zatwierdzeni"]].map(([val,label]) => (
+            <button key={val} onClick={() => setTab(val)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${tab===val ? "bg-blue-600 text-white" : "bg-[#0B0F1A] border border-[#1E2D45] text-slate-400"}`}>
+              {label}
+              {val === "pending" && pending.length > 0 && (
+                <span className="ml-1.5 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">{pending.length}</span>
+              )}
+            </button>
+          ))}
+        </div>
         <div className="p-5 flex flex-col gap-3">
           {loading && <div className="text-slate-400 text-sm text-center py-8">Ladowanie...</div>}
-          {users.map(user => (
-            <div key={user.id} className="bg-[#0B0F1A] border border-[#1E2D45] rounded-xl p-4 flex items-center gap-4">
+          {!loading && shown.length === 0 && (
+            <div className="text-slate-500 text-sm text-center py-8">Brak uzytkownikow</div>
+          )}
+          {shown.map(user => (
+            <div key={user.id} className={`bg-[#0B0F1A] border rounded-xl p-4 flex items-center gap-4 ${!user.approved ? "border-yellow-500/30" : "border-[#1E2D45]"}`}>
               <Avatar profile={user} size="md" />
               <div className="flex-1 min-w-0">
-                <div className="text-white font-semibold text-sm">
-                  {user.first_name || user.last_name ? `${user.first_name || ""} ${user.last_name || ""}`.trim() : "Brak danych"}
+                <div className="flex items-center gap-2 mb-0.5">
+                  <div className="text-white font-semibold text-sm">
+                    {user.first_name || user.last_name ? `${user.first_name || ""} ${user.last_name || ""}`.trim() : "Brak danych"}
+                  </div>
+                  {!user.approved && <span className="text-xs bg-yellow-500/20 border border-yellow-500/30 text-yellow-400 px-2 py-0.5 rounded-lg">Oczekuje</span>}
                 </div>
                 <div className="text-slate-400 text-xs truncate">{user.email}</div>
                 {user.phone && <div className="text-slate-500 text-xs">{user.phone}</div>}
               </div>
-              <div className="flex gap-2 flex-shrink-0">
-                <button onClick={() => changeRole(user.id, "handlowiec")}
-                  className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors ${user.role === "handlowiec" ? "bg-blue-500/20 border border-blue-500/30 text-blue-400" : "bg-[#1E2D45] text-slate-400 hover:text-white"}`}>
-                  💼 Handlowiec
-                </button>
-                <button onClick={() => changeRole(user.id, "admin")}
-                  className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors ${user.role === "admin" ? "bg-purple-500/20 border border-purple-500/30 text-purple-400" : "bg-[#1E2D45] text-slate-400 hover:text-white"}`}>
-                  👑 Admin
-                </button>
+              <div className="flex flex-col gap-2 flex-shrink-0">
+                {!user.approved ? (
+                  <button onClick={() => toggleApprove(user.id, true)}
+                    className="text-xs px-3 py-1.5 rounded-lg font-semibold bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/30 transition-colors">
+                    ✓ Zatwierdz
+                  </button>
+                ) : (
+                  <button onClick={() => toggleApprove(user.id, false)}
+                    className="text-xs px-3 py-1.5 rounded-lg font-semibold bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors">
+                    ✕ Zablokuj
+                  </button>
+                )}
+                <div className="flex gap-1">
+                  <button onClick={() => changeRole(user.id, "handlowiec")}
+                    className={`text-xs px-2 py-1 rounded-lg font-semibold transition-colors ${user.role === "handlowiec" ? "bg-blue-500/20 border border-blue-500/30 text-blue-400" : "bg-[#1E2D45] text-slate-400 hover:text-white"}`}>
+                    💼
+                  </button>
+                  <button onClick={() => changeRole(user.id, "admin")}
+                    className={`text-xs px-2 py-1 rounded-lg font-semibold transition-colors ${user.role === "admin" ? "bg-purple-500/20 border border-purple-500/30 text-purple-400" : "bg-[#1E2D45] text-slate-400 hover:text-white"}`}>
+                    👑
+                  </button>
+                </div>
               </div>
             </div>
           ))}
@@ -1458,14 +1498,37 @@ function AdminPanel({ session, onClose }) {
 }
 
 function LoginScreen() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [mode, setMode] = useState("login");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [mode, setMode] = useState("login");
+  const [success, setSuccess] = useState("");
+
+  // Login fields
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+
+  // Register fields
+  const [regFirstName, setRegFirstName] = useState("");
+  const [regLastName, setRegLastName] = useState("");
+  const [regPhone, setRegPhone] = useState("");
+  const [regEmail, setRegEmail] = useState("");
+  const [regEmail2, setRegEmail2] = useState("");
+  const [regPassword, setRegPassword] = useState("");
+  const [regPassword2, setRegPassword2] = useState("");
+  const [regAccept, setRegAccept] = useState(false);
+
+  const googleIcon = (
+    <svg width="18" height="18" viewBox="0 0 18 18">
+      <path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"/>
+      <path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z"/>
+      <path fill="#FBBC05" d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18l2.67-2.07z"/>
+      <path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3z"/>
+    </svg>
+  );
 
   const handleGoogle = async () => {
     setLoading(true);
+    setError("");
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: window.location.origin }
@@ -1473,69 +1536,159 @@ function LoginScreen() {
     if (error) { setError(error.message); setLoading(false); }
   };
 
-  const handleEmail = async () => {
-    if (!email || !password) { setError("Wpisz email i haslo"); return; }
+  const handleLogin = async () => {
+    if (!loginEmail || !loginPassword) { setError("Wpisz email i haslo"); return; }
     setLoading(true);
     setError("");
-    if (mode === "login") {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) { setError("Bledny email lub haslo"); setLoading(false); }
-    } else {
-      const { error } = await supabase.auth.signUp({ email, password });
-      if (error) { setError(error.message); setLoading(false); }
-      else { setError("Sprawdz email aby potwierdzic konto"); setLoading(false); }
+    const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password: loginPassword });
+    if (error) { setError("Bledny email lub haslo"); setLoading(false); return; }
+    if (data?.user) {
+      const { data: profile } = await supabase.from("profiles").select("approved").eq("id", data.user.id).single();
+      if (profile && !profile.approved) {
+        await supabase.auth.signOut();
+        setError("Twoje konto czeka na zatwierdzenie przez administratora");
+        setLoading(false);
+      }
     }
   };
+
+  const handleRegister = async () => {
+    setError("");
+    if (!regFirstName || !regLastName || !regPhone || !regEmail || !regEmail2 || !regPassword || !regPassword2) {
+      setError("Wypelnij wszystkie pola"); return;
+    }
+    if (regEmail !== regEmail2) { setError("Adresy email nie sa takie same"); return; }
+    if (regPassword !== regPassword2) { setError("Hasla nie sa takie same"); return; }
+    if (regPassword.length < 8) { setError("Haslo musi miec minimum 8 znakow"); return; }
+    if (!/[A-Z]/.test(regPassword)) { setError("Haslo musi zawierac wielka litere"); return; }
+    if (!/[0-9]/.test(regPassword)) { setError("Haslo musi zawierac cyfre"); return; }
+    if (!regAccept) { setError("Musisz zaakceptowac regulamin"); return; }
+    setLoading(true);
+    const { data, error } = await supabase.auth.signUp({
+      email: regEmail,
+      password: regPassword,
+      options: { data: { first_name: regFirstName, last_name: regLastName } }
+    });
+    if (error) { setError(error.message); setLoading(false); return; }
+    if (data?.user) {
+      await supabase.from("profiles").upsert({
+        id: data.user.id,
+        email: regEmail,
+        first_name: regFirstName,
+        last_name: regLastName,
+        phone: regPhone,
+        role: "handlowiec",
+        approved: false,
+      });
+    }
+    setLoading(false);
+    setSuccess("Rejestracja udana! Sprawdz email aby potwierdzic konto. Po weryfikacji administrator zatwierdzi Twoj dostep.");
+    setMode("login");
+  };
+
+  const inputCls = "bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-blue-500 placeholder-slate-600 w-full";
 
   return (
     <div className="min-h-screen bg-[#0B0F1A] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4">🏗️</div>
           <div className="text-white font-black text-2xl">BuildCRM</div>
           <div className="text-slate-400 text-sm mt-1">Hurtownia Materialow Budowlanych</div>
         </div>
 
         <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl p-6 flex flex-col gap-4">
-          <div className="text-white font-bold text-lg text-center">Zaloguj sie</div>
 
-          <button onClick={handleGoogle} disabled={loading}
-            className="w-full bg-white hover:bg-gray-100 text-gray-800 font-semibold text-sm py-3 rounded-xl transition-colors flex items-center justify-center gap-3">
-            <svg width="18" height="18" viewBox="0 0 18 18">
-              <path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"/>
-              <path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z"/>
-              <path fill="#FBBC05" d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18l2.67-2.07z"/>
-              <path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3z"/>
-            </svg>
-            Zaloguj przez Google
-          </button>
+          {mode === "login" ? (
+            <>
+              <div className="text-white font-bold text-lg text-center">Zaloguj sie</div>
 
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-[#1E2D45]" />
-            <span className="text-slate-500 text-xs">lub email i haslo</span>
-            <div className="flex-1 h-px bg-[#1E2D45]" />
-          </div>
+              <button onClick={handleGoogle} disabled={loading}
+                className="w-full bg-white hover:bg-gray-100 text-gray-800 font-semibold text-sm py-3 rounded-xl transition-colors flex items-center justify-center gap-3">
+                {googleIcon}
+                Zaloguj przez Google
+              </button>
 
-          <input value={email} onChange={e => setEmail(e.target.value)}
-            type="email" placeholder="Email"
-            className="bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-blue-500 placeholder-slate-600" />
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-[#1E2D45]" />
+                <span className="text-slate-500 text-xs">lub email i haslo</span>
+                <div className="flex-1 h-px bg-[#1E2D45]" />
+              </div>
 
-          <input value={password} onChange={e => setPassword(e.target.value)}
-            type="password" placeholder="Haslo"
-            onKeyDown={e => e.key === "Enter" && handleEmail()}
-            className="bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-blue-500 placeholder-slate-600" />
+              <input value={loginEmail} onChange={e => setLoginEmail(e.target.value)}
+                type="email" placeholder="Adres email" className={inputCls} />
+              <input value={loginPassword} onChange={e => setLoginPassword(e.target.value)}
+                type="password" placeholder="Haslo"
+                onKeyDown={e => e.key === "Enter" && handleLogin()}
+                className={inputCls} />
 
-          {error && <div className="text-red-400 text-xs text-center bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">{error}</div>}
+              {error && <div className="text-red-400 text-xs text-center bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">{error}</div>}
+              {success && <div className="text-emerald-400 text-xs text-center bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-3 py-2">{success}</div>}
 
-          <button onClick={handleEmail} disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm py-3 rounded-xl transition-colors">
-            {loading ? "Ladowanie..." : mode === "login" ? "Zaloguj sie" : "Zarejestruj sie"}
-          </button>
+              <button onClick={handleLogin} disabled={loading}
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm py-3 rounded-xl transition-colors">
+                {loading ? "Logowanie..." : "Zaloguj sie"}
+              </button>
 
-          <button onClick={() => { setMode(m => m === "login" ? "register" : "login"); setError(""); }}
-            className="text-slate-400 text-xs text-center hover:text-white transition-colors">
-            {mode === "login" ? "Nie masz konta? Zarejestruj sie" : "Masz konto? Zaloguj sie"}
-          </button>
+              <button onClick={() => { setMode("register"); setError(""); setSuccess(""); }}
+                className="text-slate-400 text-xs text-center hover:text-white transition-colors">
+                Nie masz konta? Zarejestruj sie
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="text-white font-bold text-lg text-center">Rejestracja</div>
+              <div className="text-slate-400 text-xs text-center">Po rejestracji administrator zatwierdzi Twoj dostep</div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <input value={regFirstName} onChange={e => setRegFirstName(e.target.value)}
+                  placeholder="Imie *" className={inputCls} />
+                <input value={regLastName} onChange={e => setRegLastName(e.target.value)}
+                  placeholder="Nazwisko *" className={inputCls} />
+              </div>
+
+              <input value={regPhone} onChange={e => setRegPhone(e.target.value)}
+                placeholder="Numer telefonu *" type="tel" className={inputCls} />
+
+              <input value={regEmail} onChange={e => setRegEmail(e.target.value)}
+                placeholder="Adres email *" type="email" className={inputCls} />
+              <input value={regEmail2} onChange={e => setRegEmail2(e.target.value)}
+                placeholder="Powtorz adres email *" type="email" className={inputCls} />
+
+              <input value={regPassword} onChange={e => setRegPassword(e.target.value)}
+                placeholder="Haslo * (min. 8 znakow, wielka litera, cyfra)" type="password" className={inputCls} />
+              <input value={regPassword2} onChange={e => setRegPassword2(e.target.value)}
+                placeholder="Powtorz haslo *" type="password"
+                onKeyDown={e => e.key === "Enter" && handleRegister()}
+                className={inputCls} />
+
+              <div className="bg-[#0B0F1A] rounded-xl p-3 text-slate-400 text-xs">
+                <div className="font-semibold text-slate-300 mb-1">Wymagania hasla:</div>
+                <div className={regPassword.length >= 8 ? "text-emerald-400" : ""}>✓ Minimum 8 znakow</div>
+                <div className={/[A-Z]/.test(regPassword) ? "text-emerald-400" : ""}>✓ Wielka litera</div>
+                <div className={/[0-9]/.test(regPassword) ? "text-emerald-400" : ""}>✓ Cyfra</div>
+                <div className={regPassword === regPassword2 && regPassword ? "text-emerald-400" : ""}>✓ Hasla sa takie same</div>
+              </div>
+
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input type="checkbox" checked={regAccept} onChange={e => setRegAccept(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 accent-blue-500" />
+                <span className="text-slate-400 text-xs">Akceptuje regulamin aplikacji i zgadzam sie na przetwarzanie moich danych osobowych przez HurtBud w celu obslugi konta CRM</span>
+              </label>
+
+              {error && <div className="text-red-400 text-xs text-center bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">{error}</div>}
+
+              <button onClick={handleRegister} disabled={loading}
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm py-3 rounded-xl transition-colors">
+                {loading ? "Rejestracja..." : "Zarejestruj sie"}
+              </button>
+
+              <button onClick={() => { setMode("login"); setError(""); }}
+                className="text-slate-400 text-xs text-center hover:text-white transition-colors">
+                Masz juz konto? Zaloguj sie
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>
