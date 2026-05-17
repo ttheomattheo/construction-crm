@@ -1706,7 +1706,7 @@ function Calendar({ reminders, setReminders, clients }) {
             </div>
             <div className="grid grid-cols-7 h-full">
               {calDays.map(({ date, current }, idx) => {
-                const dateStr = date.toISOString().split("T")[0];
+                const dateStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
                 const isToday = dateStr === today;
                 const isSunday = date.getDay() === 0;
                 const isOff = isSunday;
@@ -1757,7 +1757,7 @@ function Calendar({ reminders, setReminders, clients }) {
                   style={{gridTemplateColumns: "60px repeat(7, 1fr)"}}>
                   <div className="border-r border-[#1E2D45]" />
                   {weekDays.map((date, i) => {
-                    const dateStr = date.toISOString().split("T")[0];
+                    const dateStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
                     const isToday = dateStr === today;
                     const isSunday = date.getDay() === 0;
                     const isOff = isSunday;
@@ -1781,7 +1781,7 @@ function Calendar({ reminders, setReminders, clients }) {
                         <span className="text-xs text-slate-600 font-medium">{String(hour).padStart(2,"0")}:00</span>
                       </div>
                       {weekDays.map((date, i) => {
-                        const dateStr = date.toISOString().split("T")[0];
+                        const dateStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
                         const isSunday = date.getDay() === 0;
                         const isOff = isSunday;
                         const hourEvents = getDayEvents(dateStr).filter(r => {
