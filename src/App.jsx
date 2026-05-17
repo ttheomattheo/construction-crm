@@ -208,7 +208,7 @@ function ClientModal({ onClose, onSave, initialData = null }) {
 }
 
 function AddReminderModal({ onClose, onAdd, clients }) {
-  const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })();
+  const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })();
   const [form, setForm] = useState({
     clientName: clients[0]?.name || "",
     title: "", date: today, time: "10:00",
@@ -280,7 +280,7 @@ function AddOpportunityModal({ onClose, onAdd, clients }) {
       stage: form.stage,
       probability: Number(form.probability),
       notes: form.notes,
-      date: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })(),
+      date: new Date().toISOString().split("T")[0],
       user_id: userData?.user?.id,
     }]).select();
     if (error) { alert("Blad zapisu: " + error.message); return; }
@@ -317,7 +317,7 @@ function AddOpportunityModal({ onClose, onAdd, clients }) {
 }
 
 function Dashboard({ clients, reminders, opportunities, userProfile, profiles }) {
-  const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })();
+  const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })();
   const now = new Date();
   const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -717,7 +717,7 @@ function Clients({ clients, setClients, loadActivities, addActivity, setPage }) 
 function Reminders({ reminders, setReminders, clients }) {
   const [showAdd, setShowAdd] = useState(false);
   const [filterTab, setFilterTab] = useState("all");
-  const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })();
+  const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })();
   const filtered = reminders.filter(r => {
     if (filterTab === "today") return r.date === today && !r.done;
     if (filterTab === "pending") return !r.done;
@@ -1205,7 +1205,7 @@ function OfferPDF({ offer, client, onClose }) {
   );
 }
 
-function Offers({ clients }) {
+function Offers({ clients, session, userProfile }) {
   const [offers, setOffers] = useState([]);
   const [showCreate, setShowCreate] = useState(false);
   const [selectedClient, setSelectedClient] = useState(clients[0] || null);
@@ -1281,7 +1281,7 @@ function Offers({ clients }) {
         client_name: selectedClient.name,
         client_data: selectedClient,
         items: filteredItems,
-        author: "Piotr Handlowiec",
+        author: `${userProfile?.first_name || ""} ${userProfile?.last_name || ""}`.trim() || session?.user?.email || "Handlowiec",
         total_netto,
         total_brutto,
         user_id: userData?.user?.id,
@@ -1450,7 +1450,7 @@ function AddEventModal({ onClose, onAdd, clients, initialDate = "" }) {
     title: "",
     type: "Telefon do klienta",
     clientName: clients[0]?.name || "",
-    date: initialDate || (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })(),
+    date: initialDate || new Date().toISOString().split("T")[0],
     time: "09:00",
     notes: "",
   });
@@ -1476,16 +1476,16 @@ function AddEventModal({ onClose, onAdd, clients, initialDate = "" }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-4 pb-0 md:pb-4">
-      <div className="bg-[#141929] border border-[#1E2D45] rounded-t-2xl md:rounded-2xl w-full max-w-md max-h-[92vh] flex flex-col">
-        <div className="flex items-center justify-between p-5 border-b border-[#1E2D45] flex-shrink-0">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl w-full max-w-md">
+        <div className="flex items-center justify-between p-5 border-b border-[#1E2D45]">
           <div>
             <div className="text-white font-bold text-lg">➕ Nowe wydarzenie</div>
             <div className="text-slate-400 text-xs mt-0.5">Dodaj do kalendarza</div>
           </div>
           <button onClick={onClose} className="text-slate-500 hover:text-white text-xl w-8 h-8 flex items-center justify-center">✕</button>
         </div>
-        <div className="p-5 flex flex-col gap-4 overflow-y-auto flex-1">
+        <div className="p-5 flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <label className="text-slate-400 text-xs uppercase tracking-wider">Typ wydarzenia</label>
             <div className="grid grid-cols-2 gap-2">
@@ -1605,7 +1605,7 @@ function Calendar({ reminders, setReminders, clients }) {
   };
   const weekDays = getWeekDays();
 
-  const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })();
+  const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })();
 
   const getEventType = (r) => {
     if (r.event_type && EVENT_TYPES[r.event_type]) return EVENT_TYPES[r.event_type];
@@ -2319,16 +2319,7 @@ function LoginScreen() {
 }
 
 export default function App() {
-  const getInitialPage = () => {
-    const hash = window.location.hash.replace("#", "");
-    const validPages = ["dashboard", "clients", "reminders", "calendar", "opportunities", "offers", "lost"];
-    return validPages.includes(hash) ? hash : "dashboard";
-  };
-  const [page, setPageState] = useState(getInitialPage);
-  const setPage = (p) => {
-    setPageState(p);
-    window.location.hash = p;
-  };
+  const [page, setPage] = useState("dashboard");
   const [clients, setClients] = useState([]);
   const [reminders, setReminders] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
@@ -2399,7 +2390,7 @@ export default function App() {
     return data?.[0];
   }
 
-  const todayStr = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })();
+  const todayStr = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })();
   const pendingCount = reminders.filter(r => !r.done && r.date === todayStr).length;
 
   const pages = {
@@ -2408,7 +2399,7 @@ export default function App() {
     reminders: <Reminders reminders={reminders} setReminders={setReminders} clients={clients} session={session} />,
     opportunities: <Opportunities opportunities={opportunities} setOpportunities={setOpportunities} clients={clients} session={session} />,
     calendar: <Calendar reminders={reminders} setReminders={setReminders} clients={clients} />,
-    offers: <Offers clients={clients} session={session} />,
+    offers: <Offers clients={clients} session={session} userProfile={userProfile} />,
     lost: <LostClients clients={clients} />,
   };
 
@@ -2548,10 +2539,10 @@ export default function App() {
                     <span className="bg-red-500 text-white text-xs font-black px-2 py-0.5 rounded-full">{pendingCount}</span>
                   </div>
                   <div className="max-h-80 overflow-y-auto">
-                    {reminders.filter(r => !r.done).length === 0 ? (
+                    {reminders.filter(r => !r.done && r.date === todayStr).length === 0 ? (
                       <div className="p-6 text-center text-slate-500 text-sm">Brak oczekujacych przypomnien 🎉</div>
                     ) : (
-                      reminders.filter(r => !r.done).slice(0, 8).map(r => {
+                      reminders.filter(r => !r.done && r.date === todayStr).slice(0, 8).map(r => {
                         const pr = priorityConfig[r.priority] || priorityConfig["Sredni"];
                         return (
                           <div key={r.id} onClick={() => { setPage("reminders"); setNotifOpen(false); }}
