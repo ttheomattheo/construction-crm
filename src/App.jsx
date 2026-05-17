@@ -1462,37 +1462,39 @@ function AdminPanel({ session, onClose }) {
             <div className="text-slate-500 text-sm text-center py-8">Brak uzytkownikow</div>
           )}
           {shown.map(user => (
-            <div key={user.id} className={`bg-[#0B0F1A] border rounded-xl p-4 flex items-center gap-4 ${!user.approved ? "border-yellow-500/30" : "border-[#1E2D45]"}`}>
-              <Avatar profile={user} size="md" />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <div className="text-white font-semibold text-sm">
+            <div key={user.id} className={`bg-[#0B0F1A] border rounded-xl p-4 flex flex-col gap-3 ${!user.approved ? "border-yellow-500/30" : "border-[#1E2D45]"}`}>
+              <div className="flex items-center gap-3">
+                <Avatar profile={user} size="md" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-white font-semibold text-sm truncate">
                     {user.first_name || user.last_name ? `${user.first_name || ""} ${user.last_name || ""}`.trim() : "Brak danych"}
                   </div>
-                  {!user.approved && <span className="text-xs bg-yellow-500/20 border border-yellow-500/30 text-yellow-400 px-2 py-0.5 rounded-lg">Oczekuje</span>}
+                  <div className="text-slate-400 text-xs truncate">{user.email}</div>
+                  {user.phone && <div className="text-slate-500 text-xs">{user.phone}</div>}
                 </div>
-                <div className="text-slate-400 text-xs truncate">{user.email}</div>
-                {user.phone && <div className="text-slate-500 text-xs">{user.phone}</div>}
-              </div>
-              <div className="flex flex-col gap-2 flex-shrink-0 items-end">
-                <div className="flex gap-1">
+                <div className="flex gap-1 flex-shrink-0">
                   <button onClick={() => changeRole(user.id, "handlowiec")}
-                    className={`text-xs px-2 py-1 rounded-lg font-semibold transition-colors ${user.role === "handlowiec" ? "bg-blue-500/20 border border-blue-500/30 text-blue-400" : "bg-[#1E2D45] text-slate-400 hover:text-white"}`}>
+                    className={`text-xs px-2 py-1.5 rounded-lg font-semibold transition-colors ${user.role === "handlowiec" ? "bg-blue-500/20 border border-blue-500/30 text-blue-400" : "bg-[#1E2D45] text-slate-400 hover:text-white"}`}>
                     💼
                   </button>
                   <button onClick={() => changeRole(user.id, "admin")}
-                    className={`text-xs px-2 py-1 rounded-lg font-semibold transition-colors ${user.role === "admin" ? "bg-purple-500/20 border border-purple-500/30 text-purple-400" : "bg-[#1E2D45] text-slate-400 hover:text-white"}`}>
+                    className={`text-xs px-2 py-1.5 rounded-lg font-semibold transition-colors ${user.role === "admin" ? "bg-purple-500/20 border border-purple-500/30 text-purple-400" : "bg-[#1E2D45] text-slate-400 hover:text-white"}`}>
                     👑
                   </button>
                 </div>
+              </div>
+              <div className="flex items-center justify-between border-t border-[#1E2D45] pt-3">
+                <span className={`text-xs font-semibold px-2.5 py-1 rounded-lg ${!user.approved ? "bg-yellow-500/20 border border-yellow-500/30 text-yellow-400" : "bg-emerald-500/20 border border-emerald-500/30 text-emerald-400"}`}>
+                  {!user.approved ? "⏳ Oczekuje na zatwierdzenie" : "✅ Zatwierdzony"}
+                </span>
                 {!user.approved ? (
                   <button onClick={() => toggleApprove(user.id, true)}
-                    className="text-xs px-3 py-1.5 rounded-lg font-semibold bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/30 transition-colors whitespace-nowrap">
-                    ✓ Zatwierdz
+                    className="text-xs px-4 py-1.5 rounded-lg font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors">
+                    ✓ Zatwierdz dostep
                   </button>
                 ) : (
                   <button onClick={() => toggleApprove(user.id, false)}
-                    className="text-xs px-3 py-1.5 rounded-lg font-semibold bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors whitespace-nowrap">
+                    className="text-xs px-4 py-1.5 rounded-lg font-semibold bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors">
                     ✕ Zablokuj
                   </button>
                 )}
