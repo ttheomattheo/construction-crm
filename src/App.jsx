@@ -38,10 +38,10 @@ const stageConfig = {
 };
 
 const navItems = [
-  { id: "dashboard", icon: "⊞", label: "Dashboard" },
+  { id: "dashboard", icon: "⊞", label: "Panel glowny" },
   { id: "clients", icon: "◎", label: "Klienci" },
   { id: "reminders", icon: "◷", label: "Przypomnienia" },
-  { id: "opportunities", icon: "◈", label: "Szanse" },
+  { id: "opportunities", icon: "◈", label: "Szanse sprzedazy" },
   { id: "offers", icon: "◱", label: "Oferty" },
   { id: "lost", icon: "⊗", label: "Utraceni" },
 ];
@@ -253,95 +253,257 @@ function AddOpportunityModal({ onClose, onAdd, clients }) {
   );
 }
 
-function Dashboard({ clients, reminders, opportunities }) {
-  const pending = reminders.filter(r => !r.done);
-  const totalPipeline = opportunities.filter(o => !["Wygrana","Utracona"].includes(o.stage)).reduce((s,o) => s + o.value, 0);
+function Dashboard({ clients, reminders, opportunities, userProfile, profiles }) {
+  const today = new Date().toISOString().split("T")[0];
+  const now = new Date();
+  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const [selectedHandlowiec, setSelectedHandlowiec] = useState("all");
+  const isAdmin = userProfile?.role === "admin";
+
+  // Filter by selected handlowiec (admin only)
+  const filterByHandlowiec = (arr) => {
+    if (!isAdmin || selectedHandlowiec === "all") return arr;
+    return arr.filter(x => x.user_id === selectedHandlowiec);
+  };
+
+  const filteredClients = filterByHandlowiec(clients);
+  const filteredReminders = filterByHandlowiec(reminders);
+  const filteredOpportunities = filterByHandlowiec(opportunities);
+
+  // KPI
+  const activeOpps = filteredOpportunities.filter(o => !["Wygrana","Utracona"].includes(o.stage));
+  const todayReminders = filteredReminders.filter(r => r.date === today && !r.done);
+  const newClientsThisMonth = filteredClients.filter(c => {
+    const d = new Date(c.created_at);
+    return d >= firstDayOfMonth && d <= lastDayOfMonth;
+  });
+
+  // Top 5 clients by revenue
+  const top5 = [...filteredClients]
+    .sort((a, b) => {
+      const aVal = parseFloat(String(a.revenue).replace(/[^0-9.]/g, "")) || 0;
+      const bVal = parseFloat(String(b.revenue).replace(/[^0-9.]/g, "")) || 0;
+      return bVal - aVal;
+    })
+    .slice(0, 5);
+
+  // Chart - opportunities by stage this month
+  const stageLabels = ["Nowa", "Kontakt", "Oferta", "Negocjacje", "Wygrana", "Utracona"];
+  const stageCounts = stageLabels.map(s => filteredOpportunities.filter(o => o.stage === s).length);
+  const stageColors = ["#3B82F6", "#8B5CF6", "#F59E0B", "#F97316", "#10B981", "#EF4444"];
+
+  const monthName = now.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' });
+
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <div className="text-slate-400 text-sm mb-1">{new Date().toLocaleDateString('pl-PL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
-        <div className="text-white text-2xl font-bold">Dzien dobry 👋</div>
+    <div className="flex flex-col gap-5">
+      {/* Naglowek */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <div className="text-slate-400 text-sm mb-0.5">{now.toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
+          <div className="text-white text-2xl font-bold">Dzien dobry {userProfile?.first_name ? userProfile.first_name : ""} 👋</div>
+        </div>
+        {isAdmin && profiles && profiles.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-slate-400 text-xs">Widok:</span>
+            <select value={selectedHandlowiec} onChange={e => setSelectedHandlowiec(e.target.value)}
+              className="bg-[#141929] border border-[#1E2D45] rounded-xl px-3 py-2 text-white text-sm outline-none focus:border-blue-500">
+              <option value="all">Wszyscy handlowcy</option>
+              {profiles.filter(p => p.approved).map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.first_name && p.last_name ? `${p.first_name} ${p.last_name}` : p.email}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
-      <div className="grid grid-cols-2 gap-3">
+
+      {/* KPI karty */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { icon: "👥", label: "Klienci", value: clients.length, sub: "w bazie", color: "bg-blue-500" },
-          { icon: "🔔", label: "Przypomnienia", value: pending.length, sub: "oczekujacych", color: "bg-yellow-500" },
-          { icon: "💡", label: "Pipeline", value: `${(totalPipeline/1000).toFixed(0)}k zl`, sub: "wartosc szans", color: "bg-purple-500" },
-          { icon: "🔴", label: "Pilne", value: pending.filter(r=>r.priority==="Wysoki").length, sub: "wysokie priorytety", color: "bg-red-500" },
+          {
+            icon: "👥",
+            label: "Klienci w bazie",
+            value: filteredClients.length,
+            sub: "wszystkich klientow",
+            color: "from-blue-600 to-blue-400",
+            border: "border-blue-500/30",
+          },
+          {
+            icon: "💡",
+            label: "Aktywne szanse",
+            value: activeOpps.length,
+            sub: `${activeOpps.reduce((s,o) => s + o.value, 0).toLocaleString("pl-PL")} zl lacznie`,
+            color: "from-purple-600 to-purple-400",
+            border: "border-purple-500/30",
+          },
+          {
+            icon: "🔔",
+            label: "Przypomnienia dzis",
+            value: todayReminders.length,
+            sub: todayReminders.length === 0 ? "brak zadan na dzis" : "do wykonania dzisiaj",
+            color: "from-yellow-600 to-yellow-400",
+            border: "border-yellow-500/30",
+          },
+          {
+            icon: "🏆",
+            label: "Nowi klienci",
+            value: newClientsThisMonth.length,
+            sub: `w ${monthName}`,
+            color: "from-emerald-600 to-emerald-400",
+            border: "border-emerald-500/30",
+          },
         ].map((card) => (
-          <div key={card.label} className="bg-[#141929] border border-[#1E2D45] rounded-2xl p-4 relative overflow-hidden">
-            <div className={`absolute top-0 left-0 right-0 h-0.5 ${card.color}`} />
-            <div className="text-slate-400 text-xs uppercase tracking-widest mb-3">{card.icon} {card.label}</div>
-            <div className="text-white text-2xl font-bold mb-1">{card.value}</div>
+          <div key={card.label} className={`bg-[#141929] border ${card.border} rounded-2xl p-4 relative overflow-hidden`}>
+            <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${card.color}`} />
+            <div className="text-2xl mb-2">{card.icon}</div>
+            <div className="text-white text-2xl font-black mb-1">{card.value}</div>
+            <div className="text-white text-xs font-semibold mb-0.5">{card.label}</div>
             <div className="text-slate-500 text-xs">{card.sub}</div>
           </div>
         ))}
       </div>
-      <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl p-5">
-        <div className="text-white font-bold text-sm mb-4">📈 Aktywnosc — ostatnie wpisy</div>
-        <Bar
-          data={{
-            labels: ["Nowa", "Kontakt", "Oferta", "Negocjacje", "Wygrana", "Utracona"],
-            datasets: [{
-              label: "Szanse sprzedazy",
-              data: [
-                opportunities.filter(o=>o.stage==="Nowa").length,
-                opportunities.filter(o=>o.stage==="Kontakt").length,
-                opportunities.filter(o=>o.stage==="Oferta").length,
-                opportunities.filter(o=>o.stage==="Negocjacje").length,
-                opportunities.filter(o=>o.stage==="Wygrana").length,
-                opportunities.filter(o=>o.stage==="Utracona").length,
-              ],
-              backgroundColor: ["#3B7EF6", "#F59E0B", "#10B981", "#8B5CF6"],
-              borderRadius: 8,
-            }]
-          }}
-          options={{
-            responsive: true,
-            plugins: { legend: { display: false } },
-            scales: {
-              x: { ticks: { color: "#64748B" }, grid: { color: "#1E2D45" } },
-              y: { ticks: { color: "#64748B" }, grid: { color: "#1E2D45" }, beginAtZero: true },
-            }
-          }}
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
+
+      {/* Wykres szans sprzedazy + lejek */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl p-5">
-          <div className="text-white font-bold text-sm mb-4">🏆 Ranking klientow</div>
-          {clients.slice(0,5).map((c,i) => (
-            <div key={c.id} className="flex items-center gap-3 mb-3">
-              <div className={`font-black text-base w-5 ${i===0?"text-yellow-400":"text-slate-500"}`}>{i+1}</div>
-              <div className="flex-1">
-                <div className="text-white text-sm">{c.name}</div>
-                <div className="h-1.5 bg-[#0B0F1A] rounded mt-1.5">
-                  <div className="h-full bg-blue-500 rounded" style={{width:`${100-i*18}%`}} />
-                </div>
-              </div>
-              <div className="text-emerald-400 font-bold text-sm">{c.revenue}</div>
-            </div>
-          ))}
+          <div className="text-white font-bold text-sm mb-1">📊 Szanse sprzedazy wg etapu</div>
+          <div className="text-slate-500 text-xs mb-4">{monthName}</div>
+          <Bar
+            data={{
+              labels: stageLabels,
+              datasets: [{
+                label: "Liczba szans",
+                data: stageCounts,
+                backgroundColor: stageColors,
+                borderRadius: 8,
+              }]
+            }}
+            options={{
+              responsive: true,
+              plugins: { legend: { display: false } },
+              scales: {
+                x: { ticks: { color: "#64748B", font: { size: 10 } }, grid: { color: "#1E2D45" } },
+                y: { ticks: { color: "#64748B" }, grid: { color: "#1E2D45" }, beginAtZero: true },
+              }
+            }}
+          />
         </div>
+
+        {/* Lejek sprzedazy */}
         <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl p-5">
-          <div className="text-white font-bold text-sm mb-4">💡 Top szanse sprzedazy</div>
-          {opportunities.filter(o=>!["Wygrana","Utracona"].includes(o.stage)).slice(0,4).map((o) => {
-            const sc = stageConfig[o.stage];
-            return (
-              <div key={o.id} className="flex items-center gap-3 mb-3">
-                <div className={`w-2 h-2 rounded-full ${sc.dot} flex-shrink-0`} />
+          <div className="text-white font-bold text-sm mb-1">🎯 Lejek sprzedazy</div>
+          <div className="text-slate-500 text-xs mb-4">Aktywne szanse wedlug etapu</div>
+          <div className="flex flex-col gap-2">
+            {["Nowa","Kontakt","Oferta","Negocjacje"].map(stage => {
+              const sc = stageConfig[stage];
+              const count = filteredOpportunities.filter(o => o.stage === stage).length;
+              const total = filteredOpportunities.filter(o => !["Wygrana","Utracona"].includes(o.stage)).length || 1;
+              const pct = Math.round(count / total * 100);
+              const value = filteredOpportunities.filter(o => o.stage === stage).reduce((s,o) => s + o.value, 0);
+              return (
+                <div key={stage}>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${sc.dot}`} />
+                      <span className={`text-xs font-semibold ${sc.color}`}>{stage}</span>
+                      <span className="text-slate-500 text-xs">{count} szans</span>
+                    </div>
+                    <span className="text-slate-400 text-xs">{value.toLocaleString("pl-PL")} zl</span>
+                  </div>
+                  <div className="h-2 bg-[#0B0F1A] rounded-full">
+                    <div className={`h-full ${sc.dot} rounded-full transition-all`} style={{width: `${pct}%`}} />
+                  </div>
+                </div>
+              );
+            })}
+            <div className="mt-2 pt-2 border-t border-[#1E2D45] flex justify-between">
+              <span className="text-slate-400 text-xs">Wygrane w tym miesiacu</span>
+              <span className="text-emerald-400 font-bold text-xs">
+                {filteredOpportunities.filter(o => o.stage === "Wygrana").length} szans
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Top 5 klientow + nowi klienci */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl p-5">
+          <div className="text-white font-bold text-sm mb-4">🏆 Top 5 klientow wg obrotu</div>
+          {top5.length === 0 ? (
+            <div className="text-slate-500 text-sm text-center py-4">Brak klientow</div>
+          ) : (
+            top5.map((c, i) => (
+              <div key={c.id} className="flex items-center gap-3 mb-3 last:mb-0">
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-sm flex-shrink-0 ${i === 0 ? "bg-yellow-500/20 text-yellow-400" : i === 1 ? "bg-slate-500/20 text-slate-300" : i === 2 ? "bg-orange-500/20 text-orange-400" : "bg-[#0B0F1A] text-slate-500"}`}>
+                  {i + 1}
+                </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-white text-xs font-medium truncate">{o.title}</div>
-                  <div className="text-slate-500 text-xs">{o.clientName}</div>
+                  <div className="text-white text-sm font-semibold truncate">{c.name}</div>
+                  <div className="text-slate-500 text-xs">{c.person}</div>
+                  <div className="h-1.5 bg-[#0B0F1A] rounded mt-1.5">
+                    <div className="h-full bg-blue-500 rounded" style={{width: `${100 - i * 15}%`}} />
+                  </div>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <div className="text-emerald-400 font-bold text-xs">{o.value.toLocaleString()} zl</div>
-                  <div className="text-slate-500 text-xs">{o.probability}%</div>
+                  <div className="text-emerald-400 font-bold text-sm">{c.revenue}</div>
+                  <div className="text-slate-500 text-xs">{c.margin} marzy</div>
                 </div>
               </div>
-            );
-          })}
+            ))
+          )}
+        </div>
+
+        <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl p-5">
+          <div className="text-white font-bold text-sm mb-1">🆕 Nowi klienci w tym miesiacu</div>
+          <div className="text-slate-500 text-xs mb-4">{monthName}</div>
+          {newClientsThisMonth.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-6 gap-2">
+              <div className="text-3xl">📋</div>
+              <div className="text-slate-500 text-sm">Brak nowych klientow w tym miesiacu</div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2 overflow-y-auto max-h-52">
+              {newClientsThisMonth.map(c => (
+                <div key={c.id} className="flex items-center gap-3 bg-[#0B0F1A] rounded-xl p-3">
+                  <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-sm flex-shrink-0">
+                    {c.name.charAt(0)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-white text-sm font-semibold truncate">{c.name}</div>
+                    <div className="text-slate-500 text-xs">{c.person} · {c.city}</div>
+                  </div>
+                  <span className={`text-xs font-semibold px-2 py-1 rounded-lg ${statusColors[c.status]}`}>{c.status}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Przypomnienia na dzis */}
+      {todayReminders.length > 0 && (
+        <div className="bg-[#141929] border border-yellow-500/30 rounded-2xl p-5">
+          <div className="text-white font-bold text-sm mb-4">🔔 Twoje zadania na dzis — {todayReminders.length} przypomnien</div>
+          <div className="flex flex-col gap-2">
+            {todayReminders.slice(0, 5).map(r => {
+              const pr = priorityConfig[r.priority] || priorityConfig["Sredni"];
+              return (
+                <div key={r.id} className="flex items-center gap-3 bg-[#0B0F1A] rounded-xl p-3">
+                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${pr.dot}`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-white text-sm font-medium truncate">{r.title}</div>
+                    <div className="text-slate-500 text-xs">{r.clientName} · {r.time}</div>
+                  </div>
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-lg ${pr.bg} ${pr.color} flex-shrink-0`}>{r.priority}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1462,109 +1624,43 @@ function AdminPanel({ session, onClose }) {
             <div className="text-slate-500 text-sm text-center py-8">Brak uzytkownikow</div>
           )}
           {shown.map(user => (
-            <div key={user.id} className={`bg-[#0B0F1A] border rounded-xl p-4 flex flex-col gap-3 ${!user.approved ? "border-yellow-500/30" : "border-[#1E2D45]"}`}>
-              <div className="flex items-center gap-3">
-                <Avatar profile={user} size="md" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-white font-semibold text-sm truncate">
+            <div key={user.id} className={`bg-[#0B0F1A] border rounded-xl p-4 flex items-center gap-4 ${!user.approved ? "border-yellow-500/30" : "border-[#1E2D45]"}`}>
+              <Avatar profile={user} size="md" />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <div className="text-white font-semibold text-sm">
                     {user.first_name || user.last_name ? `${user.first_name || ""} ${user.last_name || ""}`.trim() : "Brak danych"}
                   </div>
-                  <div className="text-slate-400 text-xs truncate">{user.email}</div>
-                  {user.phone && <div className="text-slate-500 text-xs">{user.phone}</div>}
+                  {!user.approved && <span className="text-xs bg-yellow-500/20 border border-yellow-500/30 text-yellow-400 px-2 py-0.5 rounded-lg">Oczekuje</span>}
                 </div>
-                <div className="flex gap-1 flex-shrink-0">
+                <div className="text-slate-400 text-xs truncate">{user.email}</div>
+                {user.phone && <div className="text-slate-500 text-xs">{user.phone}</div>}
+              </div>
+              <div className="flex flex-col gap-2 flex-shrink-0">
+                {!user.approved ? (
+                  <button onClick={() => toggleApprove(user.id, true)}
+                    className="text-xs px-3 py-1.5 rounded-lg font-semibold bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/30 transition-colors">
+                    ✓ Zatwierdz
+                  </button>
+                ) : (
+                  <button onClick={() => toggleApprove(user.id, false)}
+                    className="text-xs px-3 py-1.5 rounded-lg font-semibold bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors">
+                    ✕ Zablokuj
+                  </button>
+                )}
+                <div className="flex gap-1">
                   <button onClick={() => changeRole(user.id, "handlowiec")}
-                    className={`text-xs px-2 py-1.5 rounded-lg font-semibold transition-colors ${user.role === "handlowiec" ? "bg-blue-500/20 border border-blue-500/30 text-blue-400" : "bg-[#1E2D45] text-slate-400 hover:text-white"}`}>
+                    className={`text-xs px-2 py-1 rounded-lg font-semibold transition-colors ${user.role === "handlowiec" ? "bg-blue-500/20 border border-blue-500/30 text-blue-400" : "bg-[#1E2D45] text-slate-400 hover:text-white"}`}>
                     💼
                   </button>
                   <button onClick={() => changeRole(user.id, "admin")}
-                    className={`text-xs px-2 py-1.5 rounded-lg font-semibold transition-colors ${user.role === "admin" ? "bg-purple-500/20 border border-purple-500/30 text-purple-400" : "bg-[#1E2D45] text-slate-400 hover:text-white"}`}>
+                    className={`text-xs px-2 py-1 rounded-lg font-semibold transition-colors ${user.role === "admin" ? "bg-purple-500/20 border border-purple-500/30 text-purple-400" : "bg-[#1E2D45] text-slate-400 hover:text-white"}`}>
                     👑
                   </button>
                 </div>
               </div>
-              <div className="flex items-center justify-between border-t border-[#1E2D45] pt-3">
-                <span className={`text-xs font-semibold px-2.5 py-1 rounded-lg ${!user.approved ? "bg-yellow-500/20 border border-yellow-500/30 text-yellow-400" : "bg-emerald-500/20 border border-emerald-500/30 text-emerald-400"}`}>
-                  {!user.approved ? "⏳ Oczekuje na zatwierdzenie" : "✅ Zatwierdzony"}
-                </span>
-                {!user.approved ? (
-                  <button onClick={() => toggleApprove(user.id, true)}
-                    className="text-xs px-4 py-1.5 rounded-lg font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors">
-                    ✓ Zatwierdz dostep
-                  </button>
-                ) : (
-                  <button onClick={() => toggleApprove(user.id, false)}
-                    className="text-xs px-4 py-1.5 rounded-lg font-semibold bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors">
-                    ✕ Zablokuj
-                  </button>
-                )}
-              </div>
             </div>
           ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ResetPasswordScreen() {
-  const [password, setPassword] = useState("");
-  const [password2, setPassword2] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [showPass, setShowPass] = useState(false);
-
-  const handleReset = async () => {
-    if (!password || !password2) { setError("Wypelnij oba pola"); return; }
-    if (password !== password2) { setError("Hasla nie sa takie same"); return; }
-    if (password.length < 8) { setError("Haslo musi miec minimum 8 znakow"); return; }
-    if (!/[A-Z]/.test(password)) { setError("Haslo musi zawierac wielka litere"); return; }
-    if (!/[0-9]/.test(password)) { setError("Haslo musi zawierac cyfre"); return; }
-    setLoading(true);
-    const { error } = await supabase.auth.updateUser({ password });
-    if (error) { setError(error.message); setLoading(false); return; }
-    setSuccess("Haslo zostalo zmienione! Mozesz sie teraz zalogowac.");
-    setLoading(false);
-    setTimeout(() => { window.location.href = "/"; }, 2000);
-  };
-
-  return (
-    <div className="min-h-screen bg-[#0B0F1A] flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-6">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4">🔐</div>
-          <div className="text-white font-black text-2xl">Nowe haslo</div>
-          <div className="text-slate-400 text-sm mt-1">Ustaw nowe haslo do swojego konta</div>
-        </div>
-        <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl p-6 flex flex-col gap-4">
-          <div className="relative">
-            <input value={password} onChange={e => setPassword(e.target.value)}
-              type={showPass ? "text" : "password"}
-              placeholder="Nowe haslo"
-              className="bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-blue-500 placeholder-slate-600 w-full" />
-            <button type="button" onClick={() => setShowPass(p => !p)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-sm">
-              {showPass ? "🙈" : "👁"}
-            </button>
-          </div>
-          <input value={password2} onChange={e => setPassword2(e.target.value)}
-            type="password" placeholder="Powtorz nowe haslo"
-            onKeyDown={e => e.key === "Enter" && handleReset()}
-            className="bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-blue-500 placeholder-slate-600 w-full" />
-          <div className="bg-[#0B0F1A] rounded-xl p-3 text-slate-400 text-xs">
-            <div className="font-semibold text-slate-300 mb-1">Wymagania hasla:</div>
-            <div className={password.length >= 8 ? "text-emerald-400" : ""}>✓ Minimum 8 znakow</div>
-            <div className={/[A-Z]/.test(password) ? "text-emerald-400" : ""}>✓ Wielka litera</div>
-            <div className={/[0-9]/.test(password) ? "text-emerald-400" : ""}>✓ Cyfra</div>
-            <div className={password === password2 && password ? "text-emerald-400" : ""}>✓ Hasla sa takie same</div>
-          </div>
-          {error && <div className="text-red-400 text-xs text-center bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">{error}</div>}
-          {success && <div className="text-emerald-400 text-xs text-center bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-3 py-2">{success}</div>}
-          <button onClick={handleReset} disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm py-3 rounded-xl transition-colors">
-            {loading ? "Zapisywanie..." : "✓ Ustaw nowe haslo"}
-          </button>
         </div>
       </div>
     </div>
@@ -1580,7 +1676,6 @@ function LoginScreen() {
   // Login fields
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
-  const [showPass, setShowPass] = useState(false);
 
   // Register fields
   const [regFirstName, setRegFirstName] = useState("");
@@ -1692,16 +1787,10 @@ function LoginScreen() {
 
               <input value={loginEmail} onChange={e => setLoginEmail(e.target.value)}
                 type="email" placeholder="Adres email" className={inputCls} />
-              <div className="relative">
-                <input value={loginPassword} onChange={e => setLoginPassword(e.target.value)}
-                  type={showPass ? "text" : "password"} placeholder="Haslo"
-                  onKeyDown={e => e.key === "Enter" && handleLogin()}
-                  className={inputCls} />
-                <button type="button" onClick={() => setShowPass(p => !p)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-sm">
-                  {showPass ? "🙈" : "👁"}
-                </button>
-              </div>
+              <input value={loginPassword} onChange={e => setLoginPassword(e.target.value)}
+                type="password" placeholder="Haslo"
+                onKeyDown={e => e.key === "Enter" && handleLogin()}
+                className={inputCls} />
 
               {error && <div className="text-red-400 text-xs text-center bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">{error}</div>}
               {success && <div className="text-emerald-400 text-xs text-center bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-3 py-2">{success}</div>}
@@ -1711,18 +1800,6 @@ function LoginScreen() {
                 {loading ? "Logowanie..." : "Zaloguj sie"}
               </button>
 
-              <button onClick={async () => {
-                if (!loginEmail) { setError("Wpisz email aby zresetowac haslo"); return; }
-                setLoading(true);
-                const { error } = await supabase.auth.resetPasswordForEmail(loginEmail, {
-                  redirectTo: window.location.origin,
-                });
-                setLoading(false);
-                if (error) { setError(error.message); }
-                else { setSuccess("Link do resetowania hasla zostal wyslany na " + loginEmail); }
-              }} className="text-slate-500 text-xs text-center hover:text-slate-300 transition-colors">
-                Zapomniales hasla? Wyslij link resetujacy
-              </button>
               <button onClick={() => { setMode("register"); setError(""); setSuccess(""); }}
                 className="text-slate-400 text-xs text-center hover:text-white transition-colors">
                 Nie masz konta? Zarejestruj sie
@@ -1797,6 +1874,7 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [allProfiles, setAllProfiles] = useState([]);
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
@@ -1804,21 +1882,13 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
 
-  const [isRecovery, setIsRecovery] = useState(false);
-
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setAuthLoading(false);
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "PASSWORD_RECOVERY") {
-        setIsRecovery(true);
-        setSession(session);
-      } else {
-        setIsRecovery(false);
-        setSession(session);
-      }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -1828,6 +1898,9 @@ export default function App() {
       loadAll();
       supabase.from("profiles").select("*").eq("id", session.user.id).single().then(({ data }) => {
         if (data) setUserProfile(data);
+      });
+      supabase.from("profiles").select("*").order("first_name").then(({ data }) => {
+        if (data) setAllProfiles(data);
       });
     }
   }, [session]);
@@ -1867,7 +1940,7 @@ export default function App() {
   const pendingCount = reminders.filter(r => !r.done).length;
 
   const pages = {
-    dashboard: <Dashboard clients={clients} reminders={reminders} opportunities={opportunities} />,
+    dashboard: <Dashboard clients={clients} reminders={reminders} opportunities={opportunities} userProfile={userProfile} profiles={allProfiles} />,
     clients: <Clients clients={clients} setClients={setClients} loadActivities={loadActivities} addActivity={addActivity} setPage={setPage} session={session} />,
     reminders: <Reminders reminders={reminders} setReminders={setReminders} clients={clients} session={session} />,
     opportunities: <Opportunities opportunities={opportunities} setOpportunities={setOpportunities} clients={clients} session={session} />,
@@ -1876,7 +1949,7 @@ export default function App() {
   };
 
   const pageLabels = {
-    dashboard: "Dashboard", clients: "Klienci",
+    dashboard: "Panel glowny", clients: "Klienci",
     reminders: "Przypomnienia", opportunities: "Szanse sprzedazy",
     offers: "Oferty", lost: "Utraceni klienci",
   };
@@ -1930,26 +2003,7 @@ export default function App() {
     </div>
   );
 
-  if (isRecovery) return <ResetPasswordScreen />;
-
   if (!session) return <LoginScreen />;
-
-  if (userProfile && !userProfile.approved && userProfile.role !== "admin") return (
-    <div className="min-h-screen bg-[#0B0F1A] flex items-center justify-center p-4">
-      <div className="w-full max-w-md text-center">
-        <div className="w-20 h-20 bg-yellow-500/20 border border-yellow-500/30 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-6">⏳</div>
-        <div className="text-white font-black text-2xl mb-2">Konto oczekuje</div>
-        <div className="text-slate-400 text-sm mb-6">Twoje konto zostalo zarejestrowane i czeka na zatwierdzenie przez administratora. Otrzymasz dostep po weryfikacji.</div>
-        <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl p-4 mb-6">
-          <div className="text-slate-400 text-xs mb-1">Zalogowany jako</div>
-          <div className="text-white font-semibold text-sm">{session.user.email}</div>
-        </div>
-        <button onClick={() => supabase.auth.signOut()} className="w-full bg-red-500/10 border border-red-500/20 text-red-400 font-semibold text-sm py-3 rounded-xl hover:bg-red-500/20 transition-colors">
-          🚪 Wyloguj sie
-        </button>
-      </div>
-    </div>
-  );
 
   if (loading) return (
     <div className="flex h-screen bg-[#0B0F1A] items-center justify-center">
