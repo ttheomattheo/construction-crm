@@ -1701,43 +1701,47 @@ function Calendar({ reminders, setReminders, clients }) {
           <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl overflow-hidden flex-1">
             <div className="grid grid-cols-7 border-b border-[#1E2D45]">
               {dayNames.map((d, i) => (
-                <div key={d} className={`py-2 text-center text-xs font-semibold ${i >= 5 ? "text-red-400" : "text-slate-400"}`}>{d}</div>
+                <div key={d} className={`py-3 text-center text-sm font-semibold ${i === 6 ? "text-red-400" : "text-slate-400"}`}>{d}</div>
               ))}
             </div>
-            <div className="grid grid-cols-7">
+            <div className="grid grid-cols-7 h-full">
               {calDays.map(({ date, current }, idx) => {
                 const dateStr = date.toISOString().split("T")[0];
                 const isToday = dateStr === today;
-                const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                const isSunday = date.getDay() === 0;
                 const holiday = holidays[dateStr];
+                const isOff = isSunday || !!holiday;
                 const events = getDayEvents(dateStr);
-                const pendingEvents = events.filter(e => !e.done);
 
                 return (
                   <div key={idx} onClick={() => handleDayClick(dateStr, false)}
-                    className={`min-h-16 p-1.5 border-b border-r border-[#1E2D45] cursor-pointer transition-colors hover:bg-white/5
-                      ${!current ? "opacity-30" : ""}
-                      ${isWeekend || holiday ? "bg-red-500/5" : ""}
-                      ${isToday ? "bg-blue-500/10 border-blue-500/30" : ""}
+                    className={`min-h-28 p-2 border-b border-r border-[#1E2D45] cursor-pointer transition-colors hover:bg-white/5
+                      ${!current ? "opacity-25" : ""}
+                      ${isOff ? "bg-red-500/5" : ""}
+                      ${isToday ? "bg-blue-500/10" : ""}
                     `}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className={`text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full
-                        ${isToday ? "bg-blue-500 text-white" : isWeekend || holiday ? "text-red-400" : "text-slate-300"}`}>
+                    <div className="flex items-start justify-between mb-1.5">
+                      <span className={`text-sm font-bold w-8 h-8 flex items-center justify-center rounded-full flex-shrink-0
+                        ${isToday ? "bg-blue-500 text-white" : isOff ? "text-red-400" : "text-slate-200"}`}>
                         {date.getDate()}
                       </span>
-                      {holiday && <span className="text-xs text-red-400 truncate max-w-16 hidden md:block" title={holiday}>🎉</span>}
+                      {holiday && (
+                        <span className="text-xs text-red-400 text-right leading-tight hidden md:block" title={holiday}>
+                          🎉 <span className="text-xs">{holiday.length > 12 ? holiday.slice(0,12)+"..." : holiday}</span>
+                        </span>
+                      )}
                     </div>
-                    <div className="flex flex-col gap-0.5">
-                      {events.slice(0, 2).map(r => {
+                    <div className="flex flex-col gap-1">
+                      {events.slice(0, 3).map(r => {
                         const et = getEventType(r);
                         return (
-                          <div key={r.id} className={`text-xs px-1 py-0.5 rounded truncate ${et.color} text-white ${r.done ? "opacity-50" : ""}`}>
-                            {et.icon} {r.title}
+                          <div key={r.id} className={`text-xs px-1.5 py-1 rounded-lg truncate ${et.color} text-white ${r.done ? "opacity-50 line-through" : ""}`}>
+                            <span className="mr-1">{et.icon}</span>{r.title}
                           </div>
                         );
                       })}
-                      {events.length > 2 && (
-                        <div className="text-xs text-slate-500">+{events.length - 2} wiecej</div>
+                      {events.length > 3 && (
+                        <div className="text-xs text-slate-500 px-1">+{events.length - 3} wiecej...</div>
                       )}
                     </div>
                   </div>
@@ -1747,53 +1751,69 @@ function Calendar({ reminders, setReminders, clients }) {
           </div>
         )}
 
-        {/* Widok tygodniowy */}
+        {/* Widok tygodniowy z godzinami */}
         {view === "week" && (
-          <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl overflow-hidden flex-1">
-            <div className="grid grid-cols-7 border-b border-[#1E2D45]">
+          <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl overflow-hidden flex-1 flex flex-col">
+            {/* Naglowki dni */}
+            <div className="grid border-b border-[#1E2D45]" style={{gridTemplateColumns: "60px repeat(7, 1fr)"}}>
+              <div className="border-r border-[#1E2D45]" />
               {weekDays.map((date, i) => {
                 const dateStr = date.toISOString().split("T")[0];
                 const isToday = dateStr === today;
-                const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                const isSunday = date.getDay() === 0;
                 const holiday = holidays[dateStr];
+                const isOff = isSunday || !!holiday;
                 return (
-                  <div key={i} className={`py-3 px-2 text-center border-r border-[#1E2D45] ${isWeekend || holiday ? "bg-red-500/5" : ""}`}>
-                    <div className={`text-xs ${isWeekend || holiday ? "text-red-400" : "text-slate-400"}`}>{dayNames[i]}</div>
-                    <div className={`text-base font-bold mt-1 w-8 h-8 flex items-center justify-center rounded-full mx-auto ${isToday ? "bg-blue-500 text-white" : isWeekend || holiday ? "text-red-400" : "text-white"}`}>
+                  <div key={i} className={`py-3 px-2 text-center border-r border-[#1E2D45] ${isOff ? "bg-red-500/5" : ""}`}>
+                    <div className={`text-xs font-medium ${isOff ? "text-red-400" : "text-slate-400"}`}>{dayNames[i]}</div>
+                    <div className={`text-xl font-black mt-1 w-10 h-10 flex items-center justify-center rounded-full mx-auto
+                      ${isToday ? "bg-blue-500 text-white" : isOff ? "text-red-400" : "text-white"}`}>
                       {date.getDate()}
                     </div>
-                    {holiday && <div className="text-xs text-red-400 mt-0.5 truncate" title={holiday}>🎉</div>}
+                    {holiday && <div className="text-xs text-red-400 mt-0.5 truncate">🎉 {holiday.slice(0,8)}</div>}
                   </div>
                 );
               })}
             </div>
-            <div className="grid grid-cols-7">
-              {weekDays.map((date, i) => {
-                const dateStr = date.toISOString().split("T")[0];
-                const events = getDayEvents(dateStr);
-                const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-                const holiday = holidays[dateStr];
-                return (
-                  <div key={i} onClick={() => handleDayClick(dateStr, false)}
-                    className={`min-h-48 p-2 border-r border-[#1E2D45] cursor-pointer hover:bg-white/5 transition-colors ${isWeekend || holiday ? "bg-red-500/5" : ""}`}>
-                    <div className="flex flex-col gap-1">
-                      {events.sort((a,b) => a.time?.localeCompare(b.time)).map(r => {
-                        const et = getEventType(r);
-                        return (
-                          <div key={r.id} className={`text-xs p-1.5 rounded-lg ${et.color} text-white ${r.done ? "opacity-50" : ""}`}>
-                            <div className="font-semibold truncate">{et.icon} {r.title}</div>
-                            {r.time && <div className="opacity-80 mt-0.5">🕐 {r.time}</div>}
-                            {r.clientName && <div className="opacity-80 truncate">👤 {r.clientName}</div>}
-                          </div>
-                        );
-                      })}
-                      {events.length === 0 && (
-                        <div className="text-slate-700 text-xs text-center pt-4">+ Dodaj</div>
-                      )}
+
+            {/* Siatka godzin */}
+            <div className="overflow-y-auto flex-1">
+              <div className="relative" style={{minHeight: "660px"}}>
+                {/* Linie godzin */}
+                {Array.from({length: 11}, (_, i) => i + 7).map(hour => (
+                  <div key={hour} className="grid border-b border-[#1E2D45]/50" style={{gridTemplateColumns: "60px repeat(7, 1fr)", height: "60px"}}>
+                    <div className="border-r border-[#1E2D45] flex items-start justify-end pr-2 pt-1">
+                      <span className="text-xs text-slate-600 font-medium">{String(hour).padStart(2,"0")}:00</span>
                     </div>
+                    {weekDays.map((date, i) => {
+                      const dateStr = date.toISOString().split("T")[0];
+                      const isSunday = date.getDay() === 0;
+                      const holiday = holidays[dateStr];
+                      const isOff = isSunday || !!holiday;
+                      const hourEvents = getDayEvents(dateStr).filter(r => {
+                        const h = parseInt(r.time?.split(":")?.[0] || "0");
+                        return h === hour;
+                      });
+                      return (
+                        <div key={i} onClick={() => { setSelectedDate(dateStr); setShowAddEvent(true); }}
+                          className={`border-r border-[#1E2D45]/50 p-0.5 cursor-pointer hover:bg-white/5 transition-colors relative
+                            ${isOff ? "bg-red-500/5" : ""}`}>
+                          {hourEvents.map(r => {
+                            const et = getEventType(r);
+                            return (
+                              <div key={r.id} onClick={e => { e.stopPropagation(); setSelectedDayEvents({ date: dateStr, events: getDayEvents(dateStr) }); }}
+                                className={`text-xs p-1 rounded-lg mb-0.5 ${et.color} text-white cursor-pointer ${r.done ? "opacity-50" : ""}`}>
+                                <div className="font-semibold truncate">{et.icon} {r.title}</div>
+                                {r.clientName && <div className="opacity-80 text-xs truncate">👤 {r.clientName}</div>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
+                ))}
+              </div>
             </div>
           </div>
         )}
