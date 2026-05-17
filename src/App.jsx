@@ -1698,7 +1698,7 @@ function Calendar({ reminders, setReminders, clients }) {
 
         {/* Widok miesięczny */}
         {view === "month" && (
-          <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl overflow-hidden flex-1">
+          <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl overflow-y-auto flex-1">
             <div className="grid grid-cols-7 border-b border-[#1E2D45]">
               {dayNames.map((d, i) => (
                 <div key={d} className={`py-3 text-center text-sm font-semibold ${i === 6 ? "text-red-400" : "text-slate-400"}`}>{d}</div>
