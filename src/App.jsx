@@ -1804,13 +1804,21 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
 
+  const [isRecovery, setIsRecovery] = useState(false);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setAuthLoading(false);
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setIsRecovery(true);
+        setSession(session);
+      } else {
+        setIsRecovery(false);
+        setSession(session);
+      }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -1922,13 +1930,9 @@ export default function App() {
     </div>
   );
 
-  if (!session) {
-    const hash = window.location.hash;
-    if (hash && hash.includes("type=recovery")) {
-      return <ResetPasswordScreen />;
-    }
-    return <LoginScreen />;
-  }
+  if (isRecovery) return <ResetPasswordScreen />;
+
+  if (!session) return <LoginScreen />;
 
   if (userProfile && !userProfile.approved && userProfile.role !== "admin") return (
     <div className="min-h-screen bg-[#0B0F1A] flex items-center justify-center p-4">
