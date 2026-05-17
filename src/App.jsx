@@ -1507,6 +1507,70 @@ function AdminPanel({ session, onClose }) {
   );
 }
 
+function ResetPasswordScreen() {
+  const [password, setPassword] = useState("");
+  const [password2, setPassword2] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [showPass, setShowPass] = useState(false);
+
+  const handleReset = async () => {
+    if (!password || !password2) { setError("Wypelnij oba pola"); return; }
+    if (password !== password2) { setError("Hasla nie sa takie same"); return; }
+    if (password.length < 8) { setError("Haslo musi miec minimum 8 znakow"); return; }
+    if (!/[A-Z]/.test(password)) { setError("Haslo musi zawierac wielka litere"); return; }
+    if (!/[0-9]/.test(password)) { setError("Haslo musi zawierac cyfre"); return; }
+    setLoading(true);
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) { setError(error.message); setLoading(false); return; }
+    setSuccess("Haslo zostalo zmienione! Mozesz sie teraz zalogowac.");
+    setLoading(false);
+    setTimeout(() => { window.location.href = "/"; }, 2000);
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0B0F1A] flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4">🔐</div>
+          <div className="text-white font-black text-2xl">Nowe haslo</div>
+          <div className="text-slate-400 text-sm mt-1">Ustaw nowe haslo do swojego konta</div>
+        </div>
+        <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl p-6 flex flex-col gap-4">
+          <div className="relative">
+            <input value={password} onChange={e => setPassword(e.target.value)}
+              type={showPass ? "text" : "password"}
+              placeholder="Nowe haslo"
+              className="bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-blue-500 placeholder-slate-600 w-full" />
+            <button type="button" onClick={() => setShowPass(p => !p)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-sm">
+              {showPass ? "🙈" : "👁"}
+            </button>
+          </div>
+          <input value={password2} onChange={e => setPassword2(e.target.value)}
+            type="password" placeholder="Powtorz nowe haslo"
+            onKeyDown={e => e.key === "Enter" && handleReset()}
+            className="bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-blue-500 placeholder-slate-600 w-full" />
+          <div className="bg-[#0B0F1A] rounded-xl p-3 text-slate-400 text-xs">
+            <div className="font-semibold text-slate-300 mb-1">Wymagania hasla:</div>
+            <div className={password.length >= 8 ? "text-emerald-400" : ""}>✓ Minimum 8 znakow</div>
+            <div className={/[A-Z]/.test(password) ? "text-emerald-400" : ""}>✓ Wielka litera</div>
+            <div className={/[0-9]/.test(password) ? "text-emerald-400" : ""}>✓ Cyfra</div>
+            <div className={password === password2 && password ? "text-emerald-400" : ""}>✓ Hasla sa takie same</div>
+          </div>
+          {error && <div className="text-red-400 text-xs text-center bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">{error}</div>}
+          {success && <div className="text-emerald-400 text-xs text-center bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-3 py-2">{success}</div>}
+          <button onClick={handleReset} disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm py-3 rounded-xl transition-colors">
+            {loading ? "Zapisywanie..." : "✓ Ustaw nowe haslo"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LoginScreen() {
   const [mode, setMode] = useState("login");
   const [loading, setLoading] = useState(false);
@@ -1858,7 +1922,13 @@ export default function App() {
     </div>
   );
 
-  if (!session) return <LoginScreen />;
+  if (!session) {
+    const hash = window.location.hash;
+    if (hash && hash.includes("type=recovery")) {
+      return <ResetPasswordScreen />;
+    }
+    return <LoginScreen />;
+  }
 
   if (userProfile && !userProfile.approved && userProfile.role !== "admin") return (
     <div className="min-h-screen bg-[#0B0F1A] flex items-center justify-center p-4">
