@@ -2436,13 +2436,7 @@ export default function App() {
           ))}
         </nav>
         <div className="px-4 pt-4 border-t border-[#1E2D45]">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center text-blue-400 font-bold">P</div>
-            <div>
-              <div className="text-white text-sm font-semibold">Piotr Handlowiec</div>
-              <div className="text-slate-500 text-xs">Region Poludnie</div>
-            </div>
-          </div>
+          <div className="text-slate-600 text-xs text-center">BuildCRM v1.0</div>
         </div>
       </div>
       <div className="flex-1 bg-black/60 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />
@@ -2595,23 +2589,10 @@ export default function App() {
             </div>
           </div>
         </div>
-        <div className={`flex-1 overflow-auto p-4 ${page === "calendar" ? "pb-4" : "pb-20"} md:pb-6`}>
+        <div className="flex-1 overflow-auto p-4 pb-4 md:pb-6">
           {pages[page]}
         </div>
-        {page !== "calendar" && (
-          <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#141929] border-t border-[#1E2D45] flex z-40">
-            {navItems.map(item => (
-              <button key={item.id} onClick={() => setPage(item.id)}
-                className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 relative ${page===item.id ? "text-blue-400" : "text-slate-500"}`}>
-                <span className="text-xl">{item.icon}</span>
-                <span className="text-xs">{item.label}</span>
-                {item.id==="reminders" && pendingCount>0 && (
-                  <span className="absolute top-1 right-4 bg-red-500 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">{pendingCount}</span>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
+        
       </div>
     </div>
   );
