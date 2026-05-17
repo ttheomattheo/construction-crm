@@ -1549,7 +1549,7 @@ function Calendar({ reminders, setReminders, clients }) {
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
-  const holidays = {};
+  const holidays = getPolishHolidays(year);
 
   const getDayEvents = (dateStr) => reminders.filter(r => r.date === dateStr);
 
@@ -1570,7 +1570,7 @@ function Calendar({ reminders, setReminders, clients }) {
   const nextWeek = () => { const d = new Date(currentDate); d.setDate(d.getDate() + 7); setCurrentDate(d); };
 
   const monthName = currentDate.toLocaleDateString("pl-PL", { month: "long", year: "numeric" });
-  const dayNames = ["Pon", "Wt", "Sr", "Czw", "Pt", "Sob", "Nd"];
+  const dayNames = ["Pn", "Wt", "Sr", "Cz", "Pt", "Sb", "Nd"];
 
   // Month view
   const firstDay = new Date(year, month, 1);
@@ -1777,7 +1777,7 @@ function Calendar({ reminders, setReminders, clients }) {
             </div>
 
             {/* Siatka godzin */}
-            <div className="overflow-y-auto flex-1">
+            <div className="overflow-y-auto flex-1" style={{WebkitOverflowScrolling: "touch", touchAction: "pan-y"}}>
               <div className="relative" style={{minHeight: "660px"}}>
                 {/* Linie godzin */}
                 {Array.from({length: 11}, (_, i) => i + 7).map(hour => (
@@ -2393,8 +2393,7 @@ export default function App() {
     return data?.[0];
   }
 
-  const today = new Date().toISOString().split("T")[0];
-  const pendingCount = reminders.filter(r => !r.done && r.date === today).length;
+  const pendingCount = reminders.filter(r => !r.done).length;
 
   const pages = {
     dashboard: <Dashboard clients={clients} reminders={reminders} opportunities={opportunities} userProfile={userProfile} profiles={allProfiles} />,
@@ -2598,21 +2597,23 @@ export default function App() {
             </div>
           </div>
         </div>
-        <div className="flex-1 overflow-auto p-4 pb-20 md:pb-6">
+        <div className={`flex-1 overflow-auto p-4 ${page === "calendar" ? "pb-4" : "pb-20"} md:pb-6`}>
           {pages[page]}
         </div>
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#141929] border-t border-[#1E2D45] flex z-50">
-          {navItems.map(item => (
-            <button key={item.id} onClick={() => setPage(item.id)}
-              className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 relative ${page===item.id ? "text-blue-400" : "text-slate-500"}`}>
-              <span className="text-xl">{item.icon}</span>
-              <span className="text-xs">{item.label}</span>
-              {item.id==="reminders" && pendingCount>0 && (
-                <span className="absolute top-1 right-4 bg-red-500 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">{pendingCount}</span>
-              )}
-            </button>
-          ))}
-        </div>
+        {page !== "calendar" && (
+          <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#141929] border-t border-[#1E2D45] flex z-50">
+            {navItems.map(item => (
+              <button key={item.id} onClick={() => setPage(item.id)}
+                className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 relative ${page===item.id ? "text-blue-400" : "text-slate-500"}`}>
+                <span className="text-xl">{item.icon}</span>
+                <span className="text-xs">{item.label}</span>
+                {item.id==="reminders" && pendingCount>0 && (
+                  <span className="absolute top-1 right-4 bg-red-500 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">{pendingCount}</span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
