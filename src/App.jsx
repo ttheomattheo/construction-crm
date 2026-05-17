@@ -1709,8 +1709,7 @@ function Calendar({ reminders, setReminders, clients }) {
                 const dateStr = date.toISOString().split("T")[0];
                 const isToday = dateStr === today;
                 const isSunday = date.getDay() === 0;
-                const holiday = holidays[dateStr];
-                const isOff = isSunday || !!holiday;
+                const isOff = isSunday;
                 const events = getDayEvents(dateStr);
 
                 return (
@@ -1725,11 +1724,6 @@ function Calendar({ reminders, setReminders, clients }) {
                         ${isToday ? "bg-blue-500 text-white" : isOff ? "text-red-400" : "text-slate-200"}`}>
                         {date.getDate()}
                       </span>
-                      {holiday && (
-                        <span className="text-xs text-red-400 text-right leading-tight hidden md:block" title={holiday}>
-                          🎉 <span className="text-xs">{holiday.length > 12 ? holiday.slice(0,12)+"..." : holiday}</span>
-                        </span>
-                      )}
                     </div>
                     <div className="flex flex-col gap-1">
                       {events.slice(0, 3).map(r => {
@@ -1763,8 +1757,7 @@ function Calendar({ reminders, setReminders, clients }) {
                 const dateStr = date.toISOString().split("T")[0];
                 const isToday = dateStr === today;
                 const isSunday = date.getDay() === 0;
-                const holiday = holidays[dateStr];
-                const isOff = isSunday || !!holiday;
+                const isOff = isSunday;
                 return (
                   <div key={i} className={`py-3 px-2 text-center border-r border-[#1E2D45] ${isOff ? "bg-red-500/5" : ""}`}>
                     <div className={`text-xs font-medium ${isOff ? "text-red-400" : "text-slate-400"}`}>{dayNames[i]}</div>
@@ -1772,7 +1765,6 @@ function Calendar({ reminders, setReminders, clients }) {
                       ${isToday ? "bg-blue-500 text-white" : isOff ? "text-red-400" : "text-white"}`}>
                       {date.getDate()}
                     </div>
-                    {holiday && <div className="text-xs text-red-400 mt-0.5 truncate">🎉 {holiday.slice(0,8)}</div>}
                   </div>
                 );
               })}
@@ -1793,8 +1785,7 @@ function Calendar({ reminders, setReminders, clients }) {
                     {weekDays.map((date, i) => {
                       const dateStr = date.toISOString().split("T")[0];
                       const isSunday = date.getDay() === 0;
-                      const holiday = holidays[dateStr];
-                      const isOff = isSunday || !!holiday;
+                      const isOff = isSunday;
                       const hourEvents = getDayEvents(dateStr).filter(r => {
                         const h = parseInt(r.time?.split(":")?.[0] || "0");
                         return h === hour;
@@ -2608,7 +2599,7 @@ export default function App() {
           {pages[page]}
         </div>
         {page !== "calendar" && (
-          <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#141929] border-t border-[#1E2D45] flex z-50">
+          <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#141929] border-t border-[#1E2D45] flex z-40">
             {navItems.map(item => (
               <button key={item.id} onClick={() => setPage(item.id)}
                 className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 relative ${page===item.id ? "text-blue-400" : "text-slate-500"}`}>
