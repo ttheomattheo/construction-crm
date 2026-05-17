@@ -250,14 +250,14 @@ function AddOpportunityModal({ onClose, onAdd, clients }) {
         <div className="text-slate-400 text-sm mb-1">{new Date().toLocaleDateString('pl-PL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
         <div className="text-white text-2xl font-bold">Dzień dobry 👋</div>
       </div>
-      <div className="flex gap-4 flex-wrap">
+      <div className="grid grid-cols-2 gap-3">
         {[
           { icon: "👥", label: "Klienci", value: clients.length, sub: "w bazie", color: "bg-blue-500" },
           { icon: "🔔", label: "Przypomnienia", value: pending.length, sub: "oczekujących", color: "bg-yellow-500" },
           { icon: "💡", label: "Pipeline", value: `${(totalPipeline/1000).toFixed(0)}k zł`, sub: "wartość szans", color: "bg-purple-500" },
           { icon: "🔴", label: "Pilne", value: pending.filter(r=>r.priority==="Wysoki").length, sub: "wysokie priorytety", color: "bg-red-500" },
         ].map((card) => (
-          <div key={card.label} className="bg-[#141929] border border-[#1E2D45] rounded-2xl p-5 flex-1 min-w-40 relative overflow-hidden">
+          <div key={card.label} className="bg-[#141929] border border-[#1E2D45] rounded-2xl p-4 relative overflow-hidden">
             <div className={`absolute top-0 left-0 right-0 h-0.5 ${card.color}`} />
             <div className="text-slate-400 text-xs uppercase tracking-widest mb-3">{card.icon} {card.label}</div>
             <div className="text-white text-2xl font-bold mb-1">{card.value}</div>
@@ -432,8 +432,8 @@ function Clients({ clients, setClients, loadActivities, addActivity }) {
                 </div>
               )}
               <div className="flex gap-2">
-                <button className="flex-1 bg-blue-600 text-white font-semibold text-sm py-2.5 rounded-xl">📞 Zadzwoń</button>
-                <button className="flex-1 bg-[#0B0F1A] border border-[#1E2D45] text-blue-400 font-semibold text-sm py-2.5 rounded-xl">+ Przyp.</button>
+                <a href={`tel:${selected.phone}`} className="flex-1 bg-blue-600 text-white font-semibold text-sm py-2.5 rounded-xl text-center">📞 Zadzwoń</a>
+                <button onClick={() => setShowAdd(true)} className="flex-1 bg-[#0B0F1A] border border-[#1E2D45] text-blue-400 font-semibold text-sm py-2.5 rounded-xl">🔔 + Przyp.</button>
               </div>
               <button onClick={() => setEditClient(selected)} className="w-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-semibold text-sm py-2.5 rounded-xl hover:bg-blue-500/20 transition-colors">
                 ✏️ Edytuj klienta
