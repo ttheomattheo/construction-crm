@@ -1552,6 +1552,7 @@ export default function App() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
   const [session, setSession] = useState(null);
@@ -1688,7 +1689,7 @@ export default function App() {
 
   return (
     <div className="flex flex-col-reverse md:flex-row h-screen bg-[#0B0F1A] font-sans overflow-hidden">
-      {profileOpen && <ProfileModal session={session} onClose={() => { setProfileOpen(false); supabase.from("profiles").select("*").eq("id", session.user.id).single().then(({data}) => { if(data) setUserProfile(data); }); }} />}
+      {profileModalOpen && <ProfileModal session={session} onClose={() => { setProfileModalOpen(false); supabase.from("profiles").select("*").eq("id", session.user.id).single().then(({data}) => { if(data) setUserProfile(data); }); }} />}
       {adminOpen && userProfile?.role === "admin" && <AdminPanel session={session} onClose={() => setAdminOpen(false)} />}
       {searchOpen && (
         <GlobalSearch clients={clients} reminders={reminders} opportunities={opportunities}
@@ -1716,26 +1717,8 @@ export default function App() {
             </button>
           ))}
         </nav>
-        <div className="px-4 pt-4 border-t border-[#1E2D45] flex flex-col gap-2">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => setProfileOpen(true)}>
-            <Avatar profile={userProfile} size="sm" />
-            <div className="flex-1 min-w-0">
-              <div className="text-white text-xs font-semibold truncate">
-                {userProfile?.first_name ? `${userProfile.first_name} ${userProfile.last_name || ""}`.trim() : session?.user?.email}
-              </div>
-              <div className={`text-xs ${userProfile?.role === "admin" ? "text-purple-400" : "text-slate-500"}`}>
-                {userProfile?.role === "admin" ? "👑 Admin" : "💼 Handlowiec"}
-              </div>
-            </div>
-          </div>
-          {userProfile?.role === "admin" && (
-            <button onClick={() => setAdminOpen(true)} className="w-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-semibold py-1.5 rounded-lg hover:bg-purple-500/20 transition-colors">
-              👑 Panel admina
-            </button>
-          )}
-          <button onClick={() => supabase.auth.signOut()} className="w-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold py-1.5 rounded-lg hover:bg-red-500/20 transition-colors">
-            Wyloguj sie
-          </button>
+        <div className="px-4 pt-4 border-t border-[#1E2D45]">
+          <div className="text-slate-600 text-xs text-center">BuildCRM v1.0</div>
         </div>
       </div>
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -1789,9 +1772,43 @@ export default function App() {
                 </div>
               )}
             </div>
-            <button onClick={() => setProfileOpen(true)} className="flex items-center justify-center hover:opacity-80 transition-opacity">
-              <Avatar profile={userProfile} size="sm" />
-            </button>
+            <div className="relative">
+              <button onClick={() => setProfileOpen(o => !o)} className="flex items-center justify-center hover:opacity-80 transition-opacity">
+                <Avatar profile={userProfile} size="sm" />
+              </button>
+              {profileOpen && (
+                <div className="absolute right-0 top-11 w-64 bg-[#141929] border border-[#1E2D45] rounded-2xl shadow-2xl z-50 overflow-hidden">
+                  <div className="p-4 border-b border-[#1E2D45] flex items-center gap-3">
+                    <Avatar profile={userProfile} size="md" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-white text-sm font-semibold truncate">
+                        {userProfile?.first_name ? `${userProfile.first_name} ${userProfile.last_name || ""}`.trim() : session?.user?.email}
+                      </div>
+                      <div className={`text-xs ${userProfile?.role === "admin" ? "text-purple-400" : "text-blue-400"}`}>
+                        {userProfile?.role === "admin" ? "👑 Administrator" : "💼 Handlowiec"}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-2 flex flex-col gap-1">
+                    <button onClick={() => { setProfileModalOpen(true); setProfileOpen(false); }}
+                      className="w-full text-left px-3 py-2.5 rounded-xl text-slate-300 text-sm hover:bg-white/5 transition-colors flex items-center gap-3">
+                      👤 Edytuj profil
+                    </button>
+                    {userProfile?.role === "admin" && (
+                      <button onClick={() => { setAdminOpen(true); setProfileOpen(false); }}
+                        className="w-full text-left px-3 py-2.5 rounded-xl text-purple-400 text-sm hover:bg-purple-500/10 transition-colors flex items-center gap-3">
+                        👑 Panel admina
+                      </button>
+                    )}
+                    <div className="h-px bg-[#1E2D45] my-1" />
+                    <button onClick={() => supabase.auth.signOut()}
+                      className="w-full text-left px-3 py-2.5 rounded-xl text-red-400 text-sm hover:bg-red-500/10 transition-colors flex items-center gap-3">
+                      🚪 Wyloguj sie
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex-1 overflow-auto p-4 pb-20 md:pb-6">
