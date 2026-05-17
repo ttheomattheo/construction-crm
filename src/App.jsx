@@ -1225,6 +1225,238 @@ function LostClients({ clients }) {
 }
 
 
+
+function Avatar({ profile, size = "sm" }) {
+  const sizes = { sm: "w-8 h-8 text-sm", md: "w-10 h-10 text-base", lg: "w-16 h-16 text-2xl" };
+  const cls = sizes[size] || sizes.sm;
+  if (profile?.avatar_url) {
+    return <img src={profile.avatar_url} alt="avatar" className={`${cls} rounded-xl object-cover flex-shrink-0`} />;
+  }
+  const initials = profile?.avatar_initials ||
+    ((profile?.first_name ? profile.first_name[0] : "") + (profile?.last_name ? profile.last_name[0] : "")) ||
+    (profile?.email ? profile.email[0].toUpperCase() : "?");
+  const color = profile?.avatar_color || "#3B82F6";
+  return (
+    <div className={`${cls} rounded-xl flex items-center justify-center font-bold text-white flex-shrink-0`}
+      style={{ background: color }}>
+      {initials.toUpperCase()}
+    </div>
+  );
+}
+
+function ProfileModal({ session, onClose }) {
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ first_name: "", last_name: "", phone: "", avatar_initials: "", avatar_color: "#3B82F6" });
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const colors = ["#3B82F6","#8B5CF6","#10B981","#F59E0B","#EF4444","#EC4899","#06B6D4","#F97316"];
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  async function loadProfile() {
+    const { data } = await supabase.from("profiles").select("*").eq("id", session.user.id).single();
+    if (data) {
+      setProfile(data);
+      setForm({
+        first_name: data.first_name || "",
+        last_name: data.last_name || "",
+        phone: data.phone || "",
+        avatar_initials: data.avatar_initials || "",
+        avatar_color: data.avatar_color || "#3B82F6",
+      });
+      if (data.avatar_url) setAvatarPreview(data.avatar_url);
+    }
+    setLoading(false);
+  }
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    let avatar_url = profile?.avatar_url || null;
+
+    if (avatarFile) {
+      const ext = avatarFile.name.split(".").pop();
+      const path = `avatars/${session.user.id}.${ext}`;
+      const { error: uploadError } = await supabase.storage.from("avatars").upload(path, avatarFile, { upsert: true });
+      if (!uploadError) {
+        const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+        avatar_url = urlData.publicUrl;
+      }
+    }
+
+    await supabase.from("profiles").update({
+      first_name: form.first_name,
+      last_name: form.last_name,
+      phone: form.phone,
+      avatar_initials: form.avatar_initials,
+      avatar_color: form.avatar_color,
+      avatar_url,
+    }).eq("id", session.user.id);
+
+    setSaving(false);
+    onClose();
+  };
+
+  if (loading) return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center">
+      <div className="text-white">Ladowanie...</div>
+    </div>
+  );
+
+  return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-5 border-b border-[#1E2D45]">
+          <div>
+            <div className="text-white font-bold text-lg">👤 Moj profil</div>
+            <div className="text-slate-400 text-xs mt-0.5">{session.user.email}</div>
+          </div>
+          <button onClick={onClose} className="text-slate-500 hover:text-white text-xl w-8 h-8 flex items-center justify-center">✕</button>
+        </div>
+        <div className="p-5 flex flex-col gap-4">
+          <div className="flex flex-col items-center gap-3">
+            <div className="relative">
+              {avatarPreview ? (
+                <img src={avatarPreview} alt="avatar" className="w-20 h-20 rounded-2xl object-cover" />
+              ) : (
+                <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-3xl font-black text-white"
+                  style={{ background: form.avatar_color }}>
+                  {(form.avatar_initials || (form.first_name?.[0] || "") + (form.last_name?.[0] || "") || session.user.email[0]).toUpperCase()}
+                </div>
+              )}
+              <label className="absolute -bottom-2 -right-2 w-8 h-8 bg-blue-600 rounded-xl flex items-center justify-center cursor-pointer hover:bg-blue-500 transition-colors">
+                📷
+                <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+              </label>
+            </div>
+            <div className="text-slate-400 text-xs">Kliknij 📷 aby dodac zdjecie</div>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-slate-400 text-xs uppercase tracking-wider">Kolor avatara</label>
+            <div className="flex gap-2 flex-wrap">
+              {colors.map(c => (
+                <button key={c} onClick={() => setForm(f => ({...f, avatar_color: c}))}
+                  className={`w-8 h-8 rounded-lg transition-all ${form.avatar_color === c ? "ring-2 ring-white scale-110" : ""}`}
+                  style={{ background: c }} />
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-slate-400 text-xs uppercase tracking-wider">Inicjaly (jesli brak zdjecia)</label>
+            <input value={form.avatar_initials} onChange={e => setForm(f => ({...f, avatar_initials: e.target.value.slice(0,2)}))}
+              placeholder="np. PH" maxLength={2}
+              className="bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-blue-500" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-slate-400 text-xs uppercase tracking-wider">Imie</label>
+              <input value={form.first_name} onChange={e => setForm(f => ({...f, first_name: e.target.value}))}
+                placeholder="Piotr"
+                className="bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-blue-500" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-slate-400 text-xs uppercase tracking-wider">Nazwisko</label>
+              <input value={form.last_name} onChange={e => setForm(f => ({...f, last_name: e.target.value}))}
+                placeholder="Kowalski"
+                className="bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-blue-500" />
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-slate-400 text-xs uppercase tracking-wider">Telefon</label>
+            <input value={form.phone} onChange={e => setForm(f => ({...f, phone: e.target.value}))}
+              placeholder="+48 500 000 000"
+              className="bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-blue-500" />
+          </div>
+
+          <div className="bg-[#0B0F1A] rounded-xl p-3">
+            <div className="text-slate-500 text-xs mb-1 uppercase tracking-wider">Rola</div>
+            <div className={`text-sm font-semibold ${profile?.role === "admin" ? "text-purple-400" : "text-blue-400"}`}>
+              {profile?.role === "admin" ? "👑 Administrator" : "💼 Handlowiec"}
+            </div>
+          </div>
+        </div>
+        <div className="p-5 border-t border-[#1E2D45] flex gap-3">
+          <button onClick={onClose} className="flex-1 bg-[#0B0F1A] border border-[#1E2D45] text-slate-400 font-semibold text-sm py-3 rounded-xl">Anuluj</button>
+          <button onClick={handleSave} disabled={saving} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm py-3 rounded-xl transition-colors">
+            {saving ? "Zapisuje..." : "✓ Zapisz profil"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AdminPanel({ session, onClose }) {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => { loadUsers(); }, []);
+
+  async function loadUsers() {
+    const { data } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
+    if (data) setUsers(data);
+    setLoading(false);
+  }
+
+  const changeRole = async (userId, role) => {
+    await supabase.from("profiles").update({ role }).eq("id", userId);
+    setUsers(prev => prev.map(u => u.id === userId ? {...u, role} : u));
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-5 border-b border-[#1E2D45]">
+          <div>
+            <div className="text-white font-bold text-lg">👑 Panel administratora</div>
+            <div className="text-slate-400 text-xs mt-0.5">{users.length} uzytkownikow w systemie</div>
+          </div>
+          <button onClick={onClose} className="text-slate-500 hover:text-white text-xl w-8 h-8 flex items-center justify-center">✕</button>
+        </div>
+        <div className="p-5 flex flex-col gap-3">
+          {loading && <div className="text-slate-400 text-sm text-center py-8">Ladowanie...</div>}
+          {users.map(user => (
+            <div key={user.id} className="bg-[#0B0F1A] border border-[#1E2D45] rounded-xl p-4 flex items-center gap-4">
+              <Avatar profile={user} size="md" />
+              <div className="flex-1 min-w-0">
+                <div className="text-white font-semibold text-sm">
+                  {user.first_name || user.last_name ? `${user.first_name || ""} ${user.last_name || ""}`.trim() : "Brak danych"}
+                </div>
+                <div className="text-slate-400 text-xs truncate">{user.email}</div>
+                {user.phone && <div className="text-slate-500 text-xs">{user.phone}</div>}
+              </div>
+              <div className="flex gap-2 flex-shrink-0">
+                <button onClick={() => changeRole(user.id, "handlowiec")}
+                  className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors ${user.role === "handlowiec" ? "bg-blue-500/20 border border-blue-500/30 text-blue-400" : "bg-[#1E2D45] text-slate-400 hover:text-white"}`}>
+                  💼 Handlowiec
+                </button>
+                <button onClick={() => changeRole(user.id, "admin")}
+                  className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors ${user.role === "admin" ? "bg-purple-500/20 border border-purple-500/30 text-purple-400" : "bg-[#1E2D45] text-slate-400 hover:text-white"}`}>
+                  👑 Admin
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -1319,6 +1551,9 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
 
@@ -1333,7 +1568,14 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  useEffect(() => { if (session) loadAll(); }, [session]);
+  useEffect(() => {
+    if (session) {
+      loadAll();
+      supabase.from("profiles").select("*").eq("id", session.user.id).single().then(({ data }) => {
+        if (data) setUserProfile(data);
+      });
+    }
+  }, [session]);
 
   async function loadAll() {
     setLoading(true);
@@ -1446,6 +1688,8 @@ export default function App() {
 
   return (
     <div className="flex flex-col-reverse md:flex-row h-screen bg-[#0B0F1A] font-sans overflow-hidden">
+      {profileOpen && <ProfileModal session={session} onClose={() => { setProfileOpen(false); supabase.from("profiles").select("*").eq("id", session.user.id).single().then(({data}) => { if(data) setUserProfile(data); }); }} />}
+      {adminOpen && userProfile?.role === "admin" && <AdminPanel session={session} onClose={() => setAdminOpen(false)} />}
       {searchOpen && (
         <GlobalSearch clients={clients} reminders={reminders} opportunities={opportunities}
           onClose={() => setSearchOpen(false)} setPage={setPage} />
@@ -1472,18 +1716,26 @@ export default function App() {
             </button>
           ))}
         </nav>
-        <div className="px-4 pt-4 border-t border-[#1E2D45]">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center text-blue-400 font-bold text-sm">
-              {session?.user?.email?.charAt(0).toUpperCase()}
-            </div>
+        <div className="px-4 pt-4 border-t border-[#1E2D45] flex flex-col gap-2">
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => setProfileOpen(true)}>
+            <Avatar profile={userProfile} size="sm" />
             <div className="flex-1 min-w-0">
-              <div className="text-white text-xs font-semibold truncate">{session?.user?.email}</div>
-              <button onClick={() => supabase.auth.signOut()} className="text-red-400 text-xs hover:text-red-300 transition-colors">
-                Wyloguj sie
-              </button>
+              <div className="text-white text-xs font-semibold truncate">
+                {userProfile?.first_name ? `${userProfile.first_name} ${userProfile.last_name || ""}`.trim() : session?.user?.email}
+              </div>
+              <div className={`text-xs ${userProfile?.role === "admin" ? "text-purple-400" : "text-slate-500"}`}>
+                {userProfile?.role === "admin" ? "👑 Admin" : "💼 Handlowiec"}
+              </div>
             </div>
           </div>
+          {userProfile?.role === "admin" && (
+            <button onClick={() => setAdminOpen(true)} className="w-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-semibold py-1.5 rounded-lg hover:bg-purple-500/20 transition-colors">
+              👑 Panel admina
+            </button>
+          )}
+          <button onClick={() => supabase.auth.signOut()} className="w-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold py-1.5 rounded-lg hover:bg-red-500/20 transition-colors">
+            Wyloguj sie
+          </button>
         </div>
       </div>
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -1496,6 +1748,9 @@ export default function App() {
             <button onClick={() => setSearchOpen(true)} className="bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-3 py-2 text-slate-400 text-sm flex items-center gap-2 hover:border-slate-600 transition-colors">
               <span>🔍</span>
               <span className="hidden md:block">Szukaj...</span>
+            </button>
+            <button onClick={() => setProfileOpen(true)} className="flex items-center justify-center hover:opacity-80 transition-opacity">
+              <Avatar profile={userProfile} size="sm" />
             </button>
             <div className="relative">
               <button onClick={() => setNotifOpen(o => !o)} className="w-9 h-9 bg-yellow-500/20 border border-yellow-500/30 rounded-xl flex items-center justify-center relative cursor-pointer hover:bg-yellow-500/30 transition-colors">
