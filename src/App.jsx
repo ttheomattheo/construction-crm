@@ -280,7 +280,7 @@ function AddOpportunityModal({ onClose, onAdd, clients }) {
       stage: form.stage,
       probability: Number(form.probability),
       notes: form.notes,
-      date: new Date().toISOString().split("T")[0],
+      date: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })(),
       user_id: userData?.user?.id,
     }]).select();
     if (error) { alert("Blad zapisu: " + error.message); return; }
@@ -1450,7 +1450,7 @@ function AddEventModal({ onClose, onAdd, clients, initialDate = "" }) {
     title: "",
     type: "Telefon do klienta",
     clientName: clients[0]?.name || "",
-    date: initialDate || new Date().toISOString().split("T")[0],
+    date: initialDate || (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })(),
     time: "09:00",
     notes: "",
   });
@@ -2399,7 +2399,7 @@ export default function App() {
     return data?.[0];
   }
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })();
   const pendingCount = reminders.filter(r => !r.done && r.date === todayStr).length;
 
   const pages = {
