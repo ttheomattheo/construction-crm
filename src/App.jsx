@@ -1474,18 +1474,7 @@ function AdminPanel({ session, onClose }) {
                 <div className="text-slate-400 text-xs truncate">{user.email}</div>
                 {user.phone && <div className="text-slate-500 text-xs">{user.phone}</div>}
               </div>
-              <div className="flex flex-col gap-2 flex-shrink-0">
-                {!user.approved ? (
-                  <button onClick={() => toggleApprove(user.id, true)}
-                    className="text-xs px-3 py-1.5 rounded-lg font-semibold bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/30 transition-colors">
-                    ✓ Zatwierdz
-                  </button>
-                ) : (
-                  <button onClick={() => toggleApprove(user.id, false)}
-                    className="text-xs px-3 py-1.5 rounded-lg font-semibold bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors">
-                    ✕ Zablokuj
-                  </button>
-                )}
+              <div className="flex flex-col gap-2 flex-shrink-0 items-end">
                 <div className="flex gap-1">
                   <button onClick={() => changeRole(user.id, "handlowiec")}
                     className={`text-xs px-2 py-1 rounded-lg font-semibold transition-colors ${user.role === "handlowiec" ? "bg-blue-500/20 border border-blue-500/30 text-blue-400" : "bg-[#1E2D45] text-slate-400 hover:text-white"}`}>
@@ -1496,6 +1485,17 @@ function AdminPanel({ session, onClose }) {
                     👑
                   </button>
                 </div>
+                {!user.approved ? (
+                  <button onClick={() => toggleApprove(user.id, true)}
+                    className="text-xs px-3 py-1.5 rounded-lg font-semibold bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/30 transition-colors whitespace-nowrap">
+                    ✓ Zatwierdz
+                  </button>
+                ) : (
+                  <button onClick={() => toggleApprove(user.id, false)}
+                    className="text-xs px-3 py-1.5 rounded-lg font-semibold bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors whitespace-nowrap">
+                    ✕ Zablokuj
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -1838,6 +1838,23 @@ export default function App() {
   );
 
   if (!session) return <LoginScreen />;
+
+  if (userProfile && !userProfile.approved && userProfile.role !== "admin") return (
+    <div className="min-h-screen bg-[#0B0F1A] flex items-center justify-center p-4">
+      <div className="w-full max-w-md text-center">
+        <div className="w-20 h-20 bg-yellow-500/20 border border-yellow-500/30 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-6">⏳</div>
+        <div className="text-white font-black text-2xl mb-2">Konto oczekuje</div>
+        <div className="text-slate-400 text-sm mb-6">Twoje konto zostalo zarejestrowane i czeka na zatwierdzenie przez administratora. Otrzymasz dostep po weryfikacji.</div>
+        <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl p-4 mb-6">
+          <div className="text-slate-400 text-xs mb-1">Zalogowany jako</div>
+          <div className="text-white font-semibold text-sm">{session.user.email}</div>
+        </div>
+        <button onClick={() => supabase.auth.signOut()} className="w-full bg-red-500/10 border border-red-500/20 text-red-400 font-semibold text-sm py-3 rounded-xl hover:bg-red-500/20 transition-colors">
+          🚪 Wyloguj sie
+        </button>
+      </div>
+    </div>
+  );
 
   if (loading) return (
     <div className="flex h-screen bg-[#0B0F1A] items-center justify-center">
