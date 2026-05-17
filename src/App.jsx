@@ -1749,9 +1749,6 @@ export default function App() {
               <span>🔍</span>
               <span className="hidden md:block">Szukaj...</span>
             </button>
-            <button onClick={() => setProfileOpen(true)} className="flex items-center justify-center hover:opacity-80 transition-opacity">
-              <Avatar profile={userProfile} size="sm" />
-            </button>
             <div className="relative">
               <button onClick={() => setNotifOpen(o => !o)} className="w-9 h-9 bg-yellow-500/20 border border-yellow-500/30 rounded-xl flex items-center justify-center relative cursor-pointer hover:bg-yellow-500/30 transition-colors">
                 🔔
@@ -1792,6 +1789,9 @@ export default function App() {
                 </div>
               )}
             </div>
+            <button onClick={() => setProfileOpen(true)} className="flex items-center justify-center hover:opacity-80 transition-opacity">
+              <Avatar profile={userProfile} size="sm" />
+            </button>
           </div>
         </div>
         <div className="flex-1 overflow-auto p-4 pb-20 md:pb-6">
