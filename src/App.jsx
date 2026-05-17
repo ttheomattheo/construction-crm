@@ -2319,7 +2319,16 @@ function LoginScreen() {
 }
 
 export default function App() {
-  const [page, setPage] = useState("dashboard");
+  const getInitialPage = () => {
+    const hash = window.location.hash.replace("#", "");
+    const validPages = ["dashboard", "clients", "reminders", "calendar", "opportunities", "offers", "lost"];
+    return validPages.includes(hash) ? hash : "dashboard";
+  };
+  const [page, setPageState] = useState(getInitialPage);
+  const setPage = (p) => {
+    setPageState(p);
+    window.location.hash = p;
+  };
   const [clients, setClients] = useState([]);
   const [reminders, setReminders] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
