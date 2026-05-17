@@ -1748,69 +1748,68 @@ function Calendar({ reminders, setReminders, clients }) {
         {/* Widok tygodniowy z godzinami */}
         {view === "week" && (
           <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl overflow-hidden flex-1 flex flex-col">
-            {/* Naglowki dni */}
-            <div className="overflow-x-auto" style={{WebkitOverflowScrolling: "touch"}}>
-            <div style={{minWidth: "700px"}}>
-            <div className="grid border-b border-[#1E2D45]" style={{gridTemplateColumns: "60px repeat(7, 1fr)"}}>
-              <div className="border-r border-[#1E2D45]" />
-              {weekDays.map((date, i) => {
-                const dateStr = date.toISOString().split("T")[0];
-                const isToday = dateStr === today;
-                const isSunday = date.getDay() === 0;
-                const isOff = isSunday;
-                return (
-                  <div key={i} className={`py-3 px-2 text-center border-r border-[#1E2D45] ${isOff ? "bg-red-500/5" : ""}`}>
-                    <div className={`text-xs font-medium ${isOff ? "text-red-400" : "text-slate-400"}`}>{dayNames[i]}</div>
-                    <div className={`text-xl font-black mt-1 w-10 h-10 flex items-center justify-center rounded-full mx-auto
-                      ${isToday ? "bg-blue-500 text-white" : isOff ? "text-red-400" : "text-white"}`}>
-                      {date.getDate()}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            </div>
-            </div>
-            {/* Siatka godzin */}
-            <div className="overflow-x-auto overflow-y-auto flex-1" style={{WebkitOverflowScrolling: "touch"}}>
-            <div style={{minWidth: "700px"}}>
-              <div className="relative" style={{minHeight: "660px"}}>
-                {/* Linie godzin */}
-                {Array.from({length: 11}, (_, i) => i + 7).map(hour => (
-                  <div key={hour} className="grid border-b border-[#1E2D45]/50" style={{gridTemplateColumns: "60px repeat(7, 1fr)", height: "60px"}}>
-                    <div className="border-r border-[#1E2D45] flex items-start justify-end pr-2 pt-1">
-                      <span className="text-xs text-slate-600 font-medium">{String(hour).padStart(2,"0")}:00</span>
-                    </div>
-                    {weekDays.map((date, i) => {
-                      const dateStr = date.toISOString().split("T")[0];
-                      const isSunday = date.getDay() === 0;
-                      const isOff = isSunday;
-                      const hourEvents = getDayEvents(dateStr).filter(r => {
-                        const h = parseInt(r.time?.split(":")?.[0] || "0");
-                        return h === hour;
-                      });
-                      return (
-                        <div key={i} onClick={() => { setSelectedDate(dateStr); setShowAddEvent(true); }}
-                          className={`border-r border-[#1E2D45]/50 p-0.5 cursor-pointer hover:bg-white/5 transition-colors relative
-                            ${isOff ? "bg-red-500/5" : ""}`}>
-                          {hourEvents.map(r => {
-                            const et = getEventType(r);
-                            return (
-                              <div key={r.id} onClick={e => { e.stopPropagation(); setSelectedDayEvents({ date: dateStr, events: getDayEvents(dateStr) }); }}
-                                className={`text-xs p-1 rounded-lg mb-0.5 ${et.color} text-white cursor-pointer ${r.done ? "opacity-50" : ""}`}>
-                                <div className="font-semibold truncate">{et.icon} {r.title}</div>
-                                {r.clientName && <div className="opacity-80 text-xs truncate">👤 {r.clientName}</div>}
-                              </div>
-                            );
-                          })}
+            {/* Jeden kontener scroll dla naglowkow i siatki */}
+            <div className="overflow-x-auto overflow-y-auto flex-1"
+              style={{WebkitOverflowScrolling: "touch", touchAction: "pan-x pan-y"}}>
+              <div style={{minWidth: "700px"}}>
+                {/* Naglowki dni - sticky na gorze */}
+                <div className="grid border-b border-[#1E2D45] bg-[#141929] sticky top-0 z-10"
+                  style={{gridTemplateColumns: "60px repeat(7, 1fr)"}}>
+                  <div className="border-r border-[#1E2D45]" />
+                  {weekDays.map((date, i) => {
+                    const dateStr = date.toISOString().split("T")[0];
+                    const isToday = dateStr === today;
+                    const isSunday = date.getDay() === 0;
+                    const isOff = isSunday;
+                    return (
+                      <div key={i} className={`py-3 px-2 text-center border-r border-[#1E2D45] ${isOff ? "bg-red-500/5" : ""}`}>
+                        <div className={`text-xs font-medium ${isOff ? "text-red-400" : "text-slate-400"}`}>{dayNames[i]}</div>
+                        <div className={`text-xl font-black mt-1 w-10 h-10 flex items-center justify-center rounded-full mx-auto
+                          ${isToday ? "bg-blue-500 text-white" : isOff ? "text-red-400" : "text-white"}`}>
+                          {date.getDate()}
                         </div>
-                      );
-                    })}
-                  </div>
-                ))}
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* Siatka godzin */}
+                <div className="relative" style={{minHeight: "660px"}}>
+                  {Array.from({length: 11}, (_, i) => i + 7).map(hour => (
+                    <div key={hour} className="grid border-b border-[#1E2D45]/50"
+                      style={{gridTemplateColumns: "60px repeat(7, 1fr)", height: "60px"}}>
+                      <div className="border-r border-[#1E2D45] flex items-start justify-end pr-2 pt-1">
+                        <span className="text-xs text-slate-600 font-medium">{String(hour).padStart(2,"0")}:00</span>
+                      </div>
+                      {weekDays.map((date, i) => {
+                        const dateStr = date.toISOString().split("T")[0];
+                        const isSunday = date.getDay() === 0;
+                        const isOff = isSunday;
+                        const hourEvents = getDayEvents(dateStr).filter(r => {
+                          const h = parseInt(r.time?.split(":")?.[0] || "0");
+                          return h === hour;
+                        });
+                        return (
+                          <div key={i} onClick={() => { setSelectedDate(dateStr); setShowAddEvent(true); }}
+                            className={`border-r border-[#1E2D45]/50 p-0.5 cursor-pointer hover:bg-white/5 transition-colors
+                              ${isOff ? "bg-red-500/5" : ""}`}>
+                            {hourEvents.map(r => {
+                              const et = getEventType(r);
+                              return (
+                                <div key={r.id}
+                                  onClick={e => { e.stopPropagation(); setSelectedDayEvents({ date: dateStr, events: getDayEvents(dateStr) }); }}
+                                  className={`text-xs p-1 rounded-lg mb-0.5 ${et.color} text-white cursor-pointer ${r.done ? "opacity-50" : ""}`}>
+                                  <div className="font-semibold truncate">{et.icon} {r.title}</div>
+                                  {r.clientName && <div className="opacity-80 text-xs truncate">👤 {r.clientName}</div>}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
             </div>
           </div>
         )}
