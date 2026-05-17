@@ -370,25 +370,40 @@ function Dashboard({ clients, reminders, opportunities, userProfile, profiles })
         <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl p-5">
           <div className="text-white font-bold text-sm mb-1">📊 Szanse sprzedazy wg etapu</div>
           <div className="text-slate-500 text-xs mb-4">{monthName}</div>
-          <Bar
-            data={{
-              labels: stageLabels,
-              datasets: [{
-                label: "Liczba szans",
-                data: stageCounts,
-                backgroundColor: stageColors,
-                borderRadius: 8,
-              }]
-            }}
-            options={{
-              responsive: true,
-              plugins: { legend: { display: false } },
-              scales: {
-                x: { ticks: { color: "#64748B", font: { size: 10 } }, grid: { color: "#1E2D45" } },
-                y: { ticks: { color: "#64748B" }, grid: { color: "#1E2D45" }, beginAtZero: true },
-              }
-            }}
-          />
+          {filteredOpportunities.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
+              <div className="text-4xl">📊</div>
+              <div className="text-slate-500 text-sm">Brak szans sprzedazy</div>
+              <div className="text-slate-600 text-xs">Dodaj pierwsza szanse aby zobaczyc wykres</div>
+            </div>
+          ) : (
+            <Bar
+              data={{
+                labels: stageLabels,
+                datasets: [{
+                  label: "Wartosc szans (zl)",
+                  data: stageLabels.map(s => filteredOpportunities.filter(o => o.stage === s).reduce((sum, o) => sum + o.value, 0)),
+                  backgroundColor: stageColors,
+                  borderRadius: 8,
+                }]
+              }}
+              options={{
+                responsive: true,
+                plugins: {
+                  legend: { display: false },
+                  tooltip: { callbacks: { label: (ctx) => `${ctx.parsed.y.toLocaleString("pl-PL")} zl` } }
+                },
+                scales: {
+                  x: { ticks: { color: "#64748B", font: { size: 10 } }, grid: { color: "#1E2D45" } },
+                  y: {
+                    ticks: { color: "#64748B", callback: (val) => val >= 1000 ? `${(val/1000).toFixed(0)}k zl` : `${val} zl` },
+                    grid: { color: "#1E2D45" },
+                    beginAtZero: true,
+                  },
+                }
+              }}
+            />
+          )}
         </div>
 
         {/* Lejek sprzedazy */}
