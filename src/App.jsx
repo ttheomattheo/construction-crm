@@ -860,8 +860,8 @@ function OfferPDF({ offer, client, onClose }) {
       <div style="display:flex;justify-content:space-between;align-items:flex-end;padding-top:24px;border-top:1px solid #e5e7eb;margin-top:32px">
         <div style="font-size:11px;color:#9ca3af">Oferta wazna 7 dni od daty wystawienia</div>
         <div style="text-align:center">
-          <div style="font-size:18px;font-weight:700;color:#111;margin-bottom:8px">${offer.author}</div>
-          <div style="width:180px;border-top:1px solid #9ca3af;padding-top:6px;font-size:12px;color:#6b7280;margin:0 auto">Podpis handlowca</div>
+          <div style="font-family:cursive;font-size:20px;color:#1d4ed8;margin-bottom:4px">${offer.author}</div>
+          <div style="width:180px;border-top:1px solid #9ca3af;padding-top:6px;font-size:11px;color:#6b7280;margin:0 auto">${offer.author}</div>
         </div>
       </div>
     </body></html>`;
@@ -876,13 +876,10 @@ function OfferPDF({ offer, client, onClose }) {
   };
 
   const handleDownloadPDF = () => {
-    const blob = new Blob([buildHTML()], { type: "text/html;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${offer.number}.html`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const html = buildHTML().replace("</head>", "<script>window.onload=function(){window.print();}<\/script></head>");
+    const win = window.open("", "_blank");
+    win.document.write(html);
+    win.document.close();
   };
 
   return (
@@ -952,8 +949,8 @@ function OfferPDF({ offer, client, onClose }) {
           <div className="flex justify-between items-end mt-8 pt-6 border-t border-gray-200">
             <div className="text-gray-400 text-xs">Oferta wazna 7 dni od daty wystawienia</div>
             <div className="text-center">
-              <div className="text-gray-900 font-bold text-lg mb-2">{offer.author}</div>
-              <div className="w-48 border-t border-gray-400 pt-2 text-gray-500 text-xs mx-auto">Podpis handlowca</div>
+              <div className="text-blue-700 font-bold text-xl mb-1" style={{fontFamily:"cursive"}}>{offer.author}</div>
+              <div className="w-48 border-t border-gray-400 pt-2 text-gray-500 text-xs mx-auto">{offer.author}</div>
             </div>
           </div>
         </div>
@@ -1227,6 +1224,92 @@ function LostClients({ clients }) {
   );
 }
 
+
+function LoginScreen() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [mode, setMode] = useState("login");
+
+  const handleGoogle = async () => {
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin }
+    });
+    if (error) { setError(error.message); setLoading(false); }
+  };
+
+  const handleEmail = async () => {
+    if (!email || !password) { setError("Wpisz email i haslo"); return; }
+    setLoading(true);
+    setError("");
+    if (mode === "login") {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) { setError("Bledny email lub haslo"); setLoading(false); }
+    } else {
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) { setError(error.message); setLoading(false); }
+      else { setError("Sprawdz email aby potwierdzic konto"); setLoading(false); }
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0B0F1A] flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4">🏗️</div>
+          <div className="text-white font-black text-2xl">BuildCRM</div>
+          <div className="text-slate-400 text-sm mt-1">Hurtownia Materialow Budowlanych</div>
+        </div>
+
+        <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl p-6 flex flex-col gap-4">
+          <div className="text-white font-bold text-lg text-center">Zaloguj sie</div>
+
+          <button onClick={handleGoogle} disabled={loading}
+            className="w-full bg-white hover:bg-gray-100 text-gray-800 font-semibold text-sm py-3 rounded-xl transition-colors flex items-center justify-center gap-3">
+            <svg width="18" height="18" viewBox="0 0 18 18">
+              <path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"/>
+              <path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z"/>
+              <path fill="#FBBC05" d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18l2.67-2.07z"/>
+              <path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3z"/>
+            </svg>
+            Zaloguj przez Google
+          </button>
+
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-[#1E2D45]" />
+            <span className="text-slate-500 text-xs">lub email i haslo</span>
+            <div className="flex-1 h-px bg-[#1E2D45]" />
+          </div>
+
+          <input value={email} onChange={e => setEmail(e.target.value)}
+            type="email" placeholder="Email"
+            className="bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-blue-500 placeholder-slate-600" />
+
+          <input value={password} onChange={e => setPassword(e.target.value)}
+            type="password" placeholder="Haslo"
+            onKeyDown={e => e.key === "Enter" && handleEmail()}
+            className="bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-blue-500 placeholder-slate-600" />
+
+          {error && <div className="text-red-400 text-xs text-center bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">{error}</div>}
+
+          <button onClick={handleEmail} disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm py-3 rounded-xl transition-colors">
+            {loading ? "Ladowanie..." : mode === "login" ? "Zaloguj sie" : "Zarejestruj sie"}
+          </button>
+
+          <button onClick={() => { setMode(m => m === "login" ? "register" : "login"); setError(""); }}
+            className="text-slate-400 text-xs text-center hover:text-white transition-colors">
+            {mode === "login" ? "Nie masz konta? Zarejestruj sie" : "Masz konto? Zaloguj sie"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [page, setPage] = useState("dashboard");
   const [clients, setClients] = useState([]);
@@ -1236,8 +1319,21 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [session, setSession] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
-  useEffect(() => { loadAll(); }, []);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setAuthLoading(false);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => { if (session) loadAll(); }, [session]);
 
   async function loadAll() {
     setLoading(true);
@@ -1326,6 +1422,18 @@ export default function App() {
     </div>
   );
 
+  if (authLoading) return (
+    <div className="flex h-screen bg-[#0B0F1A] items-center justify-center">
+      <div className="text-center">
+        <div className="text-4xl mb-4">🏗️</div>
+        <div className="text-white font-bold text-lg">Ladowanie BuildCRM...</div>
+        <div className="text-slate-400 text-sm mt-2">Laczenie z baza danych</div>
+      </div>
+    </div>
+  );
+
+  if (!session) return <LoginScreen />;
+
   if (loading) return (
     <div className="flex h-screen bg-[#0B0F1A] items-center justify-center">
       <div className="text-center">
@@ -1366,10 +1474,14 @@ export default function App() {
         </nav>
         <div className="px-4 pt-4 border-t border-[#1E2D45]">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center text-blue-400 font-bold text-sm">P</div>
-            <div>
-              <div className="text-white text-xs font-semibold">Piotr Handlowiec</div>
-              <div className="text-slate-500 text-xs">Region Poludnie</div>
+            <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center text-blue-400 font-bold text-sm">
+              {session?.user?.email?.charAt(0).toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-white text-xs font-semibold truncate">{session?.user?.email}</div>
+              <button onClick={() => supabase.auth.signOut()} className="text-red-400 text-xs hover:text-red-300 transition-colors">
+                Wyloguj sie
+              </button>
             </div>
           </div>
         </div>
