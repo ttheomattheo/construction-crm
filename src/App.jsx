@@ -1040,7 +1040,8 @@ function generateOfferNumber(clientId) {
   const month = String(now.getMonth() + 1).padStart(2, "0");
   const year = String(now.getFullYear()).slice(-2);
   const num = String(clientId || "").replace(/\D/g, "").slice(-3).padStart(3, "0");
-  return `OF/${num}/${day}${month}/${year}`;
+  const rand = String(Math.floor(Math.random() * 900) + 100);
+  return `OF/${num}/${day}${month}/${year}/${rand}`;
 }
 
 function OfferPDF({ offer, client, onClose }) {
@@ -1106,7 +1107,7 @@ function OfferPDF({ offer, client, onClose }) {
       <div style="display:flex;justify-content:space-between;align-items:flex-end;padding-top:24px;border-top:1px solid #e5e7eb;margin-top:32px">
         <div style="font-size:11px;color:#9ca3af">Oferta wazna 7 dni od daty wystawienia</div>
         <div style="text-align:center">
-          <div style="font-family:cursive;font-size:20px;color:#1d4ed8;margin-bottom:4px">${offer.author}</div>
+          <div style="font-family:Arial,sans-serif;font-size:14px;font-weight:700;color:#111;margin-bottom:4px">${offer.author}</div>
           <div style="width:180px;border-top:1px solid #9ca3af;padding-top:6px;font-size:11px;color:#6b7280;margin:0 auto">${offer.author}</div>
         </div>
       </div>
@@ -1195,7 +1196,7 @@ function OfferPDF({ offer, client, onClose }) {
           <div className="flex justify-between items-end mt-8 pt-6 border-t border-gray-200">
             <div className="text-gray-400 text-xs">Oferta wazna 7 dni od daty wystawienia</div>
             <div className="text-center">
-              <div className="text-blue-700 font-bold text-xl mb-1" style={{fontFamily:"cursive"}}>{offer.author}</div>
+              <div className="text-gray-900 font-bold text-base mb-1">{offer.author}</div>
               <div className="w-48 border-t border-gray-400 pt-2 text-gray-500 text-xs mx-auto">{offer.author}</div>
             </div>
           </div>
