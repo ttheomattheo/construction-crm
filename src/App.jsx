@@ -41,10 +41,73 @@ const navItems = [
   { id: "dashboard", icon: "⊞", label: "Panel glowny" },
   { id: "clients", icon: "◎", label: "Klienci" },
   { id: "reminders", icon: "◷", label: "Przypomnienia" },
+  { id: "calendar", icon: "◫", label: "Kalendarz" },
   { id: "opportunities", icon: "◈", label: "Szanse sprzedazy" },
   { id: "offers", icon: "◱", label: "Oferty" },
   { id: "lost", icon: "⊗", label: "Utraceni" },
 ];
+
+// Polskie swieta
+const POLISH_HOLIDAYS = {
+  "01-01": "Nowy Rok",
+  "01-06": "Swieto Trzech Kroli",
+  "05-01": "Swieto Pracy",
+  "05-03": "Swieto Konstytucji",
+  "08-15": "Wniebowziecie NMP",
+  "11-01": "Wszystkich Swietych",
+  "11-11": "Swieto Niepodleglosci",
+  "12-25": "Boze Narodzenie",
+  "12-26": "Drugi dzien Bozego Narodzenia",
+};
+
+// Wielkanoc (algorytm obliczania)
+function getEaster(year) {
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(year, month - 1, day);
+}
+
+function getPolishHolidays(year) {
+  const holidays = {};
+  Object.entries(POLISH_HOLIDAYS).forEach(([key, name]) => {
+    holidays[`${year}-${key}`] = name;
+  });
+  const easter = getEaster(year);
+  const easterStr = easter.toISOString().split("T")[0];
+  holidays[easterStr] = "Wielkanoc";
+  const easterMonday = new Date(easter);
+  easterMonday.setDate(easterMonday.getDate() + 1);
+  holidays[easterMonday.toISOString().split("T")[0]] = "Poniedzialek Wielkanocny";
+  const corpus = new Date(easter);
+  corpus.setDate(corpus.getDate() + 60);
+  holidays[corpus.toISOString().split("T")[0]] = "Boze Cialo";
+  const pentecost = new Date(easter);
+  pentecost.setDate(pentecost.getDate() + 49);
+  holidays[pentecost.toISOString().split("T")[0]] = "Zielone Swiatki";
+  return holidays;
+}
+
+const EVENT_TYPES = {
+  "Telefon do klienta":    { icon: "📞", color: "bg-blue-500/80",    border: "border-blue-400" },
+  "Transport":             { icon: "🚛", color: "bg-orange-500/80",  border: "border-orange-400" },
+  "Spotkanie z klientem":  { icon: "🤝", color: "bg-purple-500/80",  border: "border-purple-400" },
+  "Wycena":                { icon: "📋", color: "bg-yellow-500/80",  border: "border-yellow-400" },
+  "Zapytanie o oferte":    { icon: "❓", color: "bg-pink-500/80",    border: "border-pink-400" },
+  "Przypomnienie":         { icon: "🔔", color: "bg-emerald-500/80", border: "border-emerald-400" },
+  "Inne":                  { icon: "📌", color: "bg-slate-500/80",   border: "border-slate-400" },
+};
 
 function Field({ label, name, value, onChange, type = "text", options, required }) {
   return (
@@ -1381,6 +1444,364 @@ function Offers({ clients }) {
   );
 }
 
+
+function AddEventModal({ onClose, onAdd, clients, initialDate = "" }) {
+  const [form, setForm] = useState({
+    title: "",
+    type: "Telefon do klienta",
+    clientName: clients[0]?.name || "",
+    date: initialDate || new Date().toISOString().split("T")[0],
+    time: "09:00",
+    notes: "",
+  });
+
+  const handleSubmit = async () => {
+    if (!form.title) { alert("Wpisz tytul wydarzenia"); return; }
+    const { data: userData } = await supabase.auth.getUser();
+    const { data, error } = await supabase.from("reminders").insert([{
+      client_name: form.clientName,
+      title: form.title,
+      date: form.date,
+      time: form.time,
+      priority: "Sredni",
+      type: form.type === "Telefon do klienta" ? "Telefon" : form.type === "Spotkanie z klientem" ? "Spotkanie" : "Inne",
+      done: false,
+      user_id: userData?.user?.id,
+      event_type: form.type,
+      notes: form.notes,
+    }]).select();
+    if (error) { alert("Blad zapisu: " + error.message); return; }
+    if (data) onAdd({...data[0], clientName: data[0].client_name});
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl w-full max-w-md">
+        <div className="flex items-center justify-between p-5 border-b border-[#1E2D45]">
+          <div>
+            <div className="text-white font-bold text-lg">➕ Nowe wydarzenie</div>
+            <div className="text-slate-400 text-xs mt-0.5">Dodaj do kalendarza</div>
+          </div>
+          <button onClick={onClose} className="text-slate-500 hover:text-white text-xl w-8 h-8 flex items-center justify-center">✕</button>
+        </div>
+        <div className="p-5 flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-slate-400 text-xs uppercase tracking-wider">Typ wydarzenia</label>
+            <div className="grid grid-cols-2 gap-2">
+              {Object.entries(EVENT_TYPES).map(([type, cfg]) => (
+                <button key={type} onClick={() => setForm(f => ({...f, type}))}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors border ${form.type === type ? `${cfg.color} text-white ${cfg.border}` : "bg-[#0B0F1A] border-[#1E2D45] text-slate-400 hover:text-white"}`}>
+                  <span>{cfg.icon}</span>
+                  <span className="text-xs truncate">{type}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-slate-400 text-xs uppercase tracking-wider">Tytul *</label>
+            <input value={form.title} onChange={e => setForm(f => ({...f, title: e.target.value}))}
+              placeholder="np. Telefon do klienta w sprawie oferty"
+              className="bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-blue-500 placeholder-slate-600" />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-slate-400 text-xs uppercase tracking-wider">Klient</label>
+            <select value={form.clientName} onChange={e => setForm(f => ({...f, clientName: e.target.value}))}
+              className="bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-blue-500">
+              <option value="">Brak / ogolne</option>
+              {clients.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-slate-400 text-xs uppercase tracking-wider">Data</label>
+              <input type="date" value={form.date} onChange={e => setForm(f => ({...f, date: e.target.value}))}
+                className="bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-blue-500" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-slate-400 text-xs uppercase tracking-wider">Godzina</label>
+              <input type="time" value={form.time} onChange={e => setForm(f => ({...f, time: e.target.value}))}
+                className="bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-blue-500" />
+            </div>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-slate-400 text-xs uppercase tracking-wider">Notatki (opcjonalnie)</label>
+            <textarea value={form.notes} onChange={e => setForm(f => ({...f, notes: e.target.value}))} rows={2}
+              placeholder="Dodatkowe informacje..."
+              className="bg-[#0B0F1A] border border-[#1E2D45] rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-blue-500 resize-none placeholder-slate-600" />
+          </div>
+        </div>
+        <div className="p-5 border-t border-[#1E2D45] flex gap-3">
+          <button onClick={onClose} className="flex-1 bg-[#0B0F1A] border border-[#1E2D45] text-slate-400 font-semibold text-sm py-3 rounded-xl">Anuluj</button>
+          <button onClick={handleSubmit} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm py-3 rounded-xl transition-colors">✓ Zapisz</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Calendar({ reminders, setReminders, clients }) {
+  const [view, setView] = useState("month");
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [showAddEvent, setShowAddEvent] = useState(false);
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedDayEvents, setSelectedDayEvents] = useState(null);
+
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+  const holidays = getPolishHolidays(year);
+
+  const getDayEvents = (dateStr) => reminders.filter(r => r.date === dateStr);
+
+  const handleDayClick = (dateStr, isDisabled) => {
+    if (isDisabled) return;
+    const events = getDayEvents(dateStr);
+    setSelectedDate(dateStr);
+    if (events.length > 0) {
+      setSelectedDayEvents({ date: dateStr, events });
+    } else {
+      setShowAddEvent(true);
+    }
+  };
+
+  const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
+  const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
+  const prevWeek = () => { const d = new Date(currentDate); d.setDate(d.getDate() - 7); setCurrentDate(d); };
+  const nextWeek = () => { const d = new Date(currentDate); d.setDate(d.getDate() + 7); setCurrentDate(d); };
+
+  const monthName = currentDate.toLocaleDateString("pl-PL", { month: "long", year: "numeric" });
+  const dayNames = ["Pon", "Wt", "Sr", "Czw", "Pt", "Sob", "Nd"];
+
+  // Month view
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  let startDow = firstDay.getDay();
+  if (startDow === 0) startDow = 7;
+  const startDow0 = startDow - 1;
+
+  const calDays = [];
+  for (let i = 0; i < startDow0; i++) {
+    const d = new Date(year, month, 1 - (startDow0 - i));
+    calDays.push({ date: d, current: false });
+  }
+  for (let i = 1; i <= lastDay.getDate(); i++) {
+    calDays.push({ date: new Date(year, month, i), current: true });
+  }
+  while (calDays.length % 7 !== 0) {
+    const d = new Date(year, month + 1, calDays.length - lastDay.getDate() - startDow0 + 1);
+    calDays.push({ date: d, current: false });
+  }
+
+  // Week view
+  const getWeekDays = () => {
+    const dow = currentDate.getDay();
+    const monday = new Date(currentDate);
+    monday.setDate(currentDate.getDate() - (dow === 0 ? 6 : dow - 1));
+    return Array.from({length: 7}, (_, i) => {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      return d;
+    });
+  };
+  const weekDays = getWeekDays();
+
+  const today = new Date().toISOString().split("T")[0];
+
+  const getEventType = (r) => {
+    if (r.event_type && EVENT_TYPES[r.event_type]) return EVENT_TYPES[r.event_type];
+    if (r.type === "Telefon") return EVENT_TYPES["Telefon do klienta"];
+    if (r.type === "Spotkanie") return EVENT_TYPES["Spotkanie z klientem"];
+    return EVENT_TYPES["Przypomnienie"];
+  };
+
+  return (
+    <>
+      {showAddEvent && (
+        <AddEventModal
+          onClose={() => setShowAddEvent(false)}
+          onAdd={(r) => { setReminders(p => [...p, r]); setShowAddEvent(false); }}
+          clients={clients}
+          initialDate={selectedDate}
+        />
+      )}
+      {selectedDayEvents && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl w-full max-w-md max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-5 border-b border-[#1E2D45]">
+              <div>
+                <div className="text-white font-bold text-lg">
+                  {new Date(selectedDayEvents.date + "T12:00:00").toLocaleDateString("pl-PL", { weekday: "long", day: "numeric", month: "long" })}
+                </div>
+                <div className="text-slate-400 text-xs mt-0.5">{selectedDayEvents.events.length} wydarzen</div>
+              </div>
+              <button onClick={() => setSelectedDayEvents(null)} className="text-slate-500 hover:text-white text-xl w-8 h-8 flex items-center justify-center">✕</button>
+            </div>
+            <div className="p-4 flex flex-col gap-3">
+              {selectedDayEvents.events.map(r => {
+                const et = getEventType(r);
+                return (
+                  <div key={r.id} className={`border rounded-xl p-3 flex items-start gap-3 ${r.done ? "opacity-50" : ""} ${et.border} bg-[#0B0F1A]`}>
+                    <span className="text-xl flex-shrink-0">{et.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className={`font-semibold text-sm ${r.done ? "line-through text-slate-500" : "text-white"}`}>{r.title}</div>
+                      {r.clientName && <div className="text-slate-400 text-xs mt-0.5">{r.clientName}</div>}
+                      <div className="text-slate-500 text-xs mt-1">🕐 {r.time}</div>
+                    </div>
+                    <span className={`text-xs px-2 py-0.5 rounded-lg ${r.done ? "bg-slate-700 text-slate-400" : "bg-emerald-500/20 text-emerald-400"}`}>
+                      {r.done ? "Wykonane" : "Oczekuje"}
+                    </span>
+                  </div>
+                );
+              })}
+              <button onClick={() => { setSelectedDayEvents(null); setShowAddEvent(true); }}
+                className="w-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm py-2.5 rounded-xl font-semibold hover:bg-blue-500/20 transition-colors">
+                + Dodaj kolejne wydarzenie
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-col gap-4 h-full">
+        {/* Naglowek */}
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <div className="text-white font-bold text-lg">Kalendarz</div>
+            <div className="text-slate-400 text-xs mt-0.5 capitalize">{monthName}</div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex gap-1 bg-[#141929] border border-[#1E2D45] rounded-xl p-1">
+              <button onClick={() => setView("month")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${view === "month" ? "bg-blue-600 text-white" : "text-slate-400 hover:text-white"}`}>
+                Miesiac
+              </button>
+              <button onClick={() => setView("week")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${view === "week" ? "bg-blue-600 text-white" : "text-slate-400 hover:text-white"}`}>
+                Tydzien
+              </button>
+            </div>
+            <button onClick={view === "month" ? prevMonth : prevWeek} className="w-9 h-9 bg-[#141929] border border-[#1E2D45] rounded-xl text-slate-400 hover:text-white transition-colors">‹</button>
+            <button onClick={() => setCurrentDate(new Date())} className="px-3 py-1.5 bg-[#141929] border border-[#1E2D45] rounded-xl text-slate-400 text-xs hover:text-white transition-colors">Dzis</button>
+            <button onClick={view === "month" ? nextMonth : nextWeek} className="w-9 h-9 bg-[#141929] border border-[#1E2D45] rounded-xl text-slate-400 hover:text-white transition-colors">›</button>
+          </div>
+        </div>
+
+        {/* Legenda typow */}
+        <div className="flex gap-2 flex-wrap">
+          {Object.entries(EVENT_TYPES).slice(0, 5).map(([type, cfg]) => (
+            <div key={type} className="flex items-center gap-1.5 text-xs text-slate-400">
+              <span>{cfg.icon}</span>
+              <span>{type}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Widok miesięczny */}
+        {view === "month" && (
+          <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl overflow-hidden flex-1">
+            <div className="grid grid-cols-7 border-b border-[#1E2D45]">
+              {dayNames.map((d, i) => (
+                <div key={d} className={`py-2 text-center text-xs font-semibold ${i >= 5 ? "text-red-400" : "text-slate-400"}`}>{d}</div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7">
+              {calDays.map(({ date, current }, idx) => {
+                const dateStr = date.toISOString().split("T")[0];
+                const isToday = dateStr === today;
+                const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                const holiday = holidays[dateStr];
+                const events = getDayEvents(dateStr);
+                const pendingEvents = events.filter(e => !e.done);
+
+                return (
+                  <div key={idx} onClick={() => handleDayClick(dateStr, false)}
+                    className={`min-h-16 p-1.5 border-b border-r border-[#1E2D45] cursor-pointer transition-colors hover:bg-white/5
+                      ${!current ? "opacity-30" : ""}
+                      ${isWeekend || holiday ? "bg-red-500/5" : ""}
+                      ${isToday ? "bg-blue-500/10 border-blue-500/30" : ""}
+                    `}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className={`text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full
+                        ${isToday ? "bg-blue-500 text-white" : isWeekend || holiday ? "text-red-400" : "text-slate-300"}`}>
+                        {date.getDate()}
+                      </span>
+                      {holiday && <span className="text-xs text-red-400 truncate max-w-16 hidden md:block" title={holiday}>🎉</span>}
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      {events.slice(0, 2).map(r => {
+                        const et = getEventType(r);
+                        return (
+                          <div key={r.id} className={`text-xs px-1 py-0.5 rounded truncate ${et.color} text-white ${r.done ? "opacity-50" : ""}`}>
+                            {et.icon} {r.title}
+                          </div>
+                        );
+                      })}
+                      {events.length > 2 && (
+                        <div className="text-xs text-slate-500">+{events.length - 2} wiecej</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Widok tygodniowy */}
+        {view === "week" && (
+          <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl overflow-hidden flex-1">
+            <div className="grid grid-cols-7 border-b border-[#1E2D45]">
+              {weekDays.map((date, i) => {
+                const dateStr = date.toISOString().split("T")[0];
+                const isToday = dateStr === today;
+                const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                const holiday = holidays[dateStr];
+                return (
+                  <div key={i} className={`py-3 px-2 text-center border-r border-[#1E2D45] ${isWeekend || holiday ? "bg-red-500/5" : ""}`}>
+                    <div className={`text-xs ${isWeekend || holiday ? "text-red-400" : "text-slate-400"}`}>{dayNames[i]}</div>
+                    <div className={`text-base font-bold mt-1 w-8 h-8 flex items-center justify-center rounded-full mx-auto ${isToday ? "bg-blue-500 text-white" : isWeekend || holiday ? "text-red-400" : "text-white"}`}>
+                      {date.getDate()}
+                    </div>
+                    {holiday && <div className="text-xs text-red-400 mt-0.5 truncate" title={holiday}>🎉</div>}
+                  </div>
+                );
+              })}
+            </div>
+            <div className="grid grid-cols-7">
+              {weekDays.map((date, i) => {
+                const dateStr = date.toISOString().split("T")[0];
+                const events = getDayEvents(dateStr);
+                const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                const holiday = holidays[dateStr];
+                return (
+                  <div key={i} onClick={() => handleDayClick(dateStr, false)}
+                    className={`min-h-48 p-2 border-r border-[#1E2D45] cursor-pointer hover:bg-white/5 transition-colors ${isWeekend || holiday ? "bg-red-500/5" : ""}`}>
+                    <div className="flex flex-col gap-1">
+                      {events.sort((a,b) => a.time?.localeCompare(b.time)).map(r => {
+                        const et = getEventType(r);
+                        return (
+                          <div key={r.id} className={`text-xs p-1.5 rounded-lg ${et.color} text-white ${r.done ? "opacity-50" : ""}`}>
+                            <div className="font-semibold truncate">{et.icon} {r.title}</div>
+                            {r.time && <div className="opacity-80 mt-0.5">🕐 {r.time}</div>}
+                            {r.clientName && <div className="opacity-80 truncate">👤 {r.clientName}</div>}
+                          </div>
+                        );
+                      })}
+                      {events.length === 0 && (
+                        <div className="text-slate-700 text-xs text-center pt-4">+ Dodaj</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
 function LostClients({ clients }) {
   const lost = clients.filter(c => c.status === "Utracony");
   return (
@@ -1959,13 +2380,15 @@ export default function App() {
     clients: <Clients clients={clients} setClients={setClients} loadActivities={loadActivities} addActivity={addActivity} setPage={setPage} session={session} />,
     reminders: <Reminders reminders={reminders} setReminders={setReminders} clients={clients} session={session} />,
     opportunities: <Opportunities opportunities={opportunities} setOpportunities={setOpportunities} clients={clients} session={session} />,
+    calendar: <Calendar reminders={reminders} setReminders={setReminders} clients={clients} />,
     offers: <Offers clients={clients} session={session} />,
     lost: <LostClients clients={clients} />,
   };
 
   const pageLabels = {
     dashboard: "Panel glowny", clients: "Klienci",
-    reminders: "Przypomnienia", opportunities: "Szanse sprzedazy",
+    reminders: "Przypomnienia", calendar: "Kalendarz",
+    opportunities: "Szanse sprzedazy",
     offers: "Oferty", lost: "Utraceni klienci",
   };
 
