@@ -800,27 +800,325 @@ function generateOfferNumber(clientId) {
   const day = String(now.getDate()).padStart(2, "0");
   const month = String(now.getMonth() + 1).padStart(2, "0");
   const year = String(now.getFullYear()).slice(-2);
-  const clientNum = String(clientId || "001").slice(-3).padStart(3, "0");
+  const clientNum = String(clientId).substring(0, 3).toUpperCase().replace(/[^A-Z0-9]/g, "0");
   return `OF/${clientNum}/${day}${month}/${year}`;
 }
 
 function OfferPDF({ offer, client, onClose }) {
+  const total_netto = offer.items.reduce((s, i) => s + (parseFloat(i.netto) || 0), 0);
+  const total_brutto = offer.items.reduce((s, i) => s + (parseFloat(i.brutto) || 0), 0);
+  const validUntil = new Date();
+  validUntil.setDate(validUntil.getDate() + 7);
+
+  const css = `
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; padding: 40px; color: #111; font-size: 13px; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; }
+    .brand { font-size: 28px; font-weight: 900; color: #1d4ed8; }
+    .brand-sub { color: #6b7280; font-size: 12px; margin-top: 4px; }
+    .offer-meta { text-align: right; color: #374151; }
+    .offer-meta .num { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .offer-meta div { font-size: 12px; color: #6b7280; margin-top: 2px; }
+    .client-box { background: #f9fafb; border-radius: 12px; padding: 16px; margin-bottom: 24px; }
+    .client-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #9ca3af; margin-bottom: 8px; }
+    .client-name { font-size: 18px; font-weight: 700; color: #111; margin-bottom: 4px; }
+    .client-detail { font-size: 12px; color: #4b5563; margin-top: 2px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+    thead tr { background: #1d4ed8; color: white; }
+    th { padding: 10px 12px; text-align: left; font-size: 12px; font-weight: 600; }
+    th.right { text-align: right; }
+    th.center { text-align: center; }
+    td { padding: 9px 12px; font-size: 12px; border-bottom: 1px solid #e5e7eb; color: #111; }
+    td.right { text-align: right; }
+    td.center { text-align: center; }
+    tr.alt { background: #f9fafb; }
+    tfoot td { font-weight: 700; padding: 12px; border-top: 2px solid #1d4ed8; border-bottom: none; }
+    tfoot .total-brutto { color: #1d4ed8; font-size: 16px; font-weight: 900; text-align: right; }
+    tfoot .total-netto { text-align: right; }
+    tfoot .label { text-align: right; font-weight: 700; }
+    .footer { display: flex; justify-content: space-between; align-items: flex-end; padding-top: 24px; border-top: 1px solid #e5e7eb; margin-top: 32px; }
+    .footer-note { font-size: 11px; color: #9ca3af; }
+    .signature { text-align: center; }
+    .signature-name-cursive { font-size: 18px; font-family: cursive; color: #1d4ed8; margin-bottom: 4px; }
+    .signature-line { width: 180px; border-top: 1px solid #9ca3af; padding-top: 6px; font-size: 11px; color: #6b7280; margin: 0 auto; }
+  `;
+
+  const tableRows = offer.items.map((item, i) => `
+    <tr class="${i % 2 === 1 ? "alt" : ""}">
+      <td>${i + 1}</td>
+      <td><strong>${item.product}</strong></td>
+      <td class="center">${item.jm}</td>
+      <td class="center">${item.qty}</td>
+      <td class="right">${parseFloat(item.netto_jm || 0).toLocaleString("pl-PL", {minimumFractionDigits: 2})} zł</td>
+      <td class="right">${parseFloat(item.netto || 0).toLocaleString("pl-PL", {minimumFractionDigits: 2})} zł</td>
+      <td class="right"><strong>${parseFloat(item.brutto || 0).toLocaleString("pl-PL", {minimumFractionDigits: 2})} zł</strong></td>
+    </tr>
+  `).join("");
+
+  const html = `
+    <html><head><title>${offer.number}</title><style>${css}</style></head>
+    <body>
+      <div class="header">
+        <div>
+          <div class="brand">HurtBud</div>
+          <div class="brand-sub">Hurtownia Materiałów Budowlanych</div>
+        </div>
+        <div class="offer-meta">
+          <div class="num">${offer.number}</div>
+          <div>Data: ${new Date().toLocaleDateString("pl-PL")}</div>
+          <div>Ważna do: ${validUntil.toLocaleDateString("pl-PL")}</div>
+          <div>Wystawił: ${offer.author}</div>
+        </div>
+      </div>
+      <div class="client-box">
+        <div class="client-label">Klient</div>
+        <div class="client-name">${client?.name || ""}</div>
+        <div class="client-detail">${client?.person || ""}</div>
+        <div class="client-detail">${client?.city || ""}</div>
+        <div class="client-detail">${client?.phone || ""}</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Lp.</th>
+            <th>Produkt</th>
+            <th class="center">JM</th>
+            <th class="center">Ilość</th>
+            <th class="right">Cena netto/JM</th>
+            <th class="right">Netto total</th>
+            <th class="right">Brutto total</th>
+          </tr>
+        </thead>
+        <tbody>${tableRows}</tbody>
+        <tfoot>
+          <tr>
+            <td colspan="5" class="label">RAZEM:</td>
+            <td class="total-netto">${total_netto.toLocaleString("pl-PL", {minimumFractionDigits: 2})} zł</td>
+            <td class="total-brutto">${total_brutto.toLocaleString("pl-PL", {minimumFractionDigits: 2})} zł</td>
+          </tr>
+        </tfoot>
+      </table>
+      <div class="footer">
+        <div class="footer-note">Oferta ważna 7 dni od daty wystawienia</div>
+        <div class="signature">
+          <div class="signature-name-cursive">${offer.author}</div>
+          <div class="signature-line">${offer.author}</div>
+        </div>
+      </div>
+    </body></html>
+  `;
+
   const handlePrint = () => {
-    const style = document.createElement("style");
-    style.id = "print-style";
-    style.innerHTML = `
-      @media print {
-        body > * { display: none !important; }
-        #offer-print-wrapper { display: block !important; }
-        #offer-print-wrapper * { display: revert !important; }
-      }
-    `;
-    document.head.appendChild(style);
-    window.print();
-    setTimeout(() => {
-      const el = document.getElementById("print-style");
-      if (el) el.remove();
-    }, 1000);
+    const win = window.open("", "_blank");
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); }, 500);
+  };
+
+  const handleDownloadPDF = () => {
+    const win = window.open("", "_blank");
+    win.document.write(html.replace("</style>", `
+      @media print { @page { margin: 0; } body { padding: 20px; } }
+      </style>
+      <script>window.onload=function(){window.print();setTimeout(function(){window.close();},1000);}<\/script>
+    `));
+    win.document.close();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[95vh] overflow-y-auto text-black">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50 rounded-t-2xl">
+          <div className="flex gap-3">
+            <button onClick={handleDownloadPDF} className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm px-4 py-2 rounded-xl transition-colors">⬇️ Pobierz PDF</button>
+            <button onClick={handlePrint} className="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm px-4 py-2 rounded-xl transition-colors">🖨️ Drukuj</button>
+            <button onClick={onClose} className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold text-sm px-4 py-2 rounded-xl transition-colors">✕ Zamknij</button>
+          </div>
+          <div className="text-gray-500 text-xs">Pobierz PDF → wybierz "Zapisz jako PDF"</div>
+        </div>
+        <div className="p-8">
+          <div className="flex justify-between items-start mb-8">
+            <div>
+              <div className="text-3xl font-black text-blue-700">HurtBud</div>
+              <div className="text-gray-500 text-sm mt-1">Hurtownia Materiałów Budowlanych</div>
+            </div>
+            <div className="text-right">
+              <div className="text-gray-800 font-bold text-lg">{offer.number}</div>
+              <div className="text-gray-500 text-sm">Data: {new Date().toLocaleDateString("pl-PL")}</div>
+              <div className="text-gray-500 text-sm">Ważna do: {validUntil.toLocaleDateString("pl-PL")}</div>
+              <div className="text-gray-500 text-sm">Wystawił: {offer.author}</div>
+            </div>
+          </div>
+          <div className="bg-gray-50 rounded-xl p-4 mb-6">
+            <div className="text-gray-500 text-xs uppercase tracking-wider mb-2">Klient</div>
+            <div className="text-gray-900 font-bold text-lg">{client?.name}</div>
+            <div className="text-gray-600 text-sm">{client?.person}</div>
+            <div className="text-gray-600 text-sm">{client?.city}</div>
+            <div className="text-gray-600 text-sm">{client?.phone}</div>
+          </div>
+          <table className="w-full mb-6">
+            <thead>
+              <tr className="bg-blue-700 text-white">
+                <th className="py-3 px-3 text-left text-sm font-semibold">Lp.</th>
+                <th className="py-3 px-3 text-left text-sm font-semibold">Produkt</th>
+                <th className="py-3 px-3 text-center text-sm font-semibold">JM</th>
+                <th className="py-3 px-3 text-center text-sm font-semibold">Ilość</th>
+                <th className="py-3 px-3 text-right text-sm font-semibold">Cena netto/JM</th>
+                <th className="py-3 px-3 text-right text-sm font-semibold">Netto total</th>
+                <th className="py-3 px-3 text-right text-sm font-semibold">Brutto total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {offer.items.map((item, i) => (
+                <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                  <td className="py-2.5 px-3 text-sm text-gray-600">{i + 1}</td>
+                  <td className="py-2.5 px-3 text-sm text-gray-900 font-medium">{item.product}</td>
+                  <td className="py-2.5 px-3 text-sm text-gray-600 text-center">{item.jm}</td>
+                  <td className="py-2.5 px-3 text-sm text-gray-600 text-center">{item.qty}</td>
+                  <td className="py-2.5 px-3 text-sm text-gray-900 text-right">{parseFloat(item.netto_jm || 0).toLocaleString("pl-PL", {minimumFractionDigits: 2})} zł</td>
+                  <td className="py-2.5 px-3 text-sm text-gray-900 text-right">{parseFloat(item.netto || 0).toLocaleString("pl-PL", {minimumFractionDigits: 2})} zł</td>
+                  <td className="py-2.5 px-3 text-sm font-bold text-gray-900 text-right">{parseFloat(item.brutto || 0).toLocaleString("pl-PL", {minimumFractionDigits: 2})} zł</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="border-t-2 border-blue-700">
+                <td colSpan={5} className="py-3 px-3 text-right font-bold text-gray-800">RAZEM:</td>
+                <td className="py-3 px-3 text-right font-bold text-gray-900">{total_netto.toLocaleString("pl-PL", {minimumFractionDigits: 2})} zł</td>
+                <td className="py-3 px-3 text-right font-black text-blue-700 text-lg">{total_brutto.toLocaleString("pl-PL", {minimumFractionDigits: 2})} zł</td>
+              </tr>
+            </tfoot>
+          </table>
+          <div className="flex justify-between items-end mt-8 pt-6 border-t border-gray-200">
+            <div className="text-gray-400 text-xs">Oferta ważna 7 dni od daty wystawienia</div>
+            <div className="text-center">
+              <div className="text-blue-700 font-bold text-lg mb-1" style={{fontFamily:"cursive"}}>{offer.author}</div>
+              <div className="w-48 border-t border-gray-400 pt-2 text-gray-500 text-xs mx-auto">{offer.author}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+  const handlePrint = () => {
+    const printContents = document.getElementById("offer-print-wrapper").innerHTML;
+    const win = window.open("", "_blank");
+    win.document.write(`
+      <html>
+        <head>
+          <title>${offer.number}</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: Arial, sans-serif; padding: 32px; color: #111; }
+            table { width: 100%; border-collapse: collapse; }
+            th { background: #1d4ed8; color: white; padding: 10px 12px; text-align: left; font-size: 13px; }
+            td { padding: 8px 12px; font-size: 13px; border-bottom: 1px solid #e5e7eb; }
+            .text-right { text-align: right; }
+            .text-center { text-align: center; }
+            .font-black { font-weight: 900; }
+            .font-bold { font-weight: 700; }
+            .text-blue-700 { color: #1d4ed8; }
+            .text-3xl { font-size: 28px; }
+            .text-lg { font-size: 18px; }
+            .bg-gray-50 { background: #f9fafb; }
+            .rounded-xl { border-radius: 12px; }
+            .p-4 { padding: 16px; }
+            .mb-8 { margin-bottom: 32px; }
+            .mb-6 { margin-bottom: 24px; }
+            .mb-2 { margin-bottom: 8px; }
+            .mt-8 { margin-top: 32px; }
+            .pt-6 { padding-top: 24px; }
+            .border-t { border-top: 1px solid #e5e7eb; }
+            .border-t-2 { border-top: 2px solid #1d4ed8; }
+            .flex { display: flex; }
+            .justify-between { justify-content: space-between; }
+            .items-end { align-items: flex-end; }
+            .items-start { align-items: flex-start; }
+            .text-gray-500 { color: #6b7280; }
+            .text-gray-400 { color: #9ca3af; }
+            .text-gray-600 { color: #4b5563; }
+            .text-gray-800 { color: #1f2937; }
+            .text-gray-900 { color: #111827; }
+            .text-sm { font-size: 13px; }
+            .text-xs { font-size: 11px; }
+            .uppercase { text-transform: uppercase; }
+            .tracking-wider { letter-spacing: 0.05em; }
+            .w-48 { width: 192px; }
+            .border-t { border-top: 1px solid #9ca3af; }
+            .pt-2 { padding-top: 8px; }
+            tfoot td { font-weight: bold; }
+            @media print { body { padding: 16px; } }
+          </style>
+        </head>
+        <body>${printContents}</body>
+      </html>
+    `);
+    win.document.close();
+    win.focus();
+    win.print();
+    win.close();
+  };
+
+  const handleDownloadPDF = () => {
+    const printContents = document.getElementById("offer-print-wrapper").innerHTML;
+    const win = window.open("", "_blank");
+    win.document.write(`
+      <html>
+        <head>
+          <title>${offer.number}</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: Arial, sans-serif; padding: 32px; color: #111; }
+            table { width: 100%; border-collapse: collapse; }
+            th { background: #1d4ed8; color: white; padding: 10px 12px; text-align: left; font-size: 13px; }
+            td { padding: 8px 12px; font-size: 13px; border-bottom: 1px solid #e5e7eb; }
+            .text-right { text-align: right; }
+            .text-center { text-align: center; }
+            .font-black { font-weight: 900; }
+            .font-bold { font-weight: 700; }
+            .text-blue-700 { color: #1d4ed8; }
+            .text-3xl { font-size: 28px; }
+            .text-lg { font-size: 18px; }
+            .bg-gray-50 { background: #f9fafb; }
+            .rounded-xl { border-radius: 12px; }
+            .p-4 { padding: 16px; }
+            .mb-8 { margin-bottom: 32px; }
+            .mb-6 { margin-bottom: 24px; }
+            .mb-2 { margin-bottom: 8px; }
+            .mt-8 { margin-top: 32px; }
+            .pt-6 { padding-top: 24px; }
+            .border-t { border-top: 1px solid #e5e7eb; }
+            .border-t-2 { border-top: 2px solid #1d4ed8; }
+            .flex { display: flex; }
+            .justify-between { justify-content: space-between; }
+            .items-end { align-items: flex-end; }
+            .items-start { align-items: flex-start; }
+            .text-gray-500 { color: #6b7280; }
+            .text-gray-400 { color: #9ca3af; }
+            .text-gray-600 { color: #4b5563; }
+            .text-gray-800 { color: #1f2937; }
+            .text-gray-900 { color: #111827; }
+            .text-sm { font-size: 13px; }
+            .text-xs { font-size: 11px; }
+            .uppercase { text-transform: uppercase; }
+            .tracking-wider { letter-spacing: 0.05em; }
+            .w-48 { width: 192px; }
+            .pt-2 { padding-top: 8px; }
+            tfoot td { font-weight: bold; }
+          </style>
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function(){ window.close(); }, 500);
+            }
+          </script>
+        </head>
+        <body>${printContents}</body>
+      </html>
+    `);
+    win.document.close();
   };
   const total_netto = offer.items.reduce((s, i) => s + (parseFloat(i.netto) || 0), 0);
   const total_brutto = offer.items.reduce((s, i) => s + (parseFloat(i.brutto) || 0), 0);
@@ -832,10 +1130,11 @@ function OfferPDF({ offer, client, onClose }) {
       <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[95vh] overflow-y-auto text-black">
         <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50 rounded-t-2xl">
           <div className="flex gap-3">
-            <button onClick={handlePrint} className="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm px-4 py-2 rounded-xl transition-colors">🖨️ Drukuj / Pobierz PDF</button>
+            <button onClick={handleDownloadPDF} className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm px-4 py-2 rounded-xl transition-colors">⬇️ Pobierz PDF</button>
+            <button onClick={handlePrint} className="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm px-4 py-2 rounded-xl transition-colors">🖨️ Drukuj</button>
             <button onClick={onClose} className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold text-sm px-4 py-2 rounded-xl transition-colors">✕ Zamknij</button>
           </div>
-          <div className="text-gray-500 text-xs">Użyj Ctrl+P → Zapisz jako PDF</div>
+          <div className="text-gray-500 text-xs">PDF → wybierz "Zapisz jako PDF"</div>
         </div>
         <div id="offer-print-wrapper" className="p-8">
           <div className="flex justify-between items-start mb-8">
@@ -891,7 +1190,8 @@ function OfferPDF({ offer, client, onClose }) {
           <div className="flex justify-between items-end mt-8 pt-6 border-t border-gray-200">
             <div className="text-gray-400 text-xs">Oferta ważna 7 dni od daty wystawienia</div>
             <div className="text-center">
-              <div className="w-48 border-t border-gray-400 pt-2 text-gray-500 text-xs">Podpis handlowca</div>
+              <div className="text-gray-800 font-bold text-base mb-1" style={{fontFamily: "cursive"}}>{offer.author}</div>
+              <div className="w-48 border-t border-gray-400 pt-2 text-gray-500 text-xs">{offer.author}</div>
             </div>
           </div>
         </div>
