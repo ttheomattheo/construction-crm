@@ -1516,6 +1516,7 @@ function LoginScreen() {
   // Login fields
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [showPass, setShowPass] = useState(false);
 
   // Register fields
   const [regFirstName, setRegFirstName] = useState("");
@@ -1627,10 +1628,16 @@ function LoginScreen() {
 
               <input value={loginEmail} onChange={e => setLoginEmail(e.target.value)}
                 type="email" placeholder="Adres email" className={inputCls} />
-              <input value={loginPassword} onChange={e => setLoginPassword(e.target.value)}
-                type="password" placeholder="Haslo"
-                onKeyDown={e => e.key === "Enter" && handleLogin()}
-                className={inputCls} />
+              <div className="relative">
+                <input value={loginPassword} onChange={e => setLoginPassword(e.target.value)}
+                  type={showPass ? "text" : "password"} placeholder="Haslo"
+                  onKeyDown={e => e.key === "Enter" && handleLogin()}
+                  className={inputCls} />
+                <button type="button" onClick={() => setShowPass(p => !p)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-sm">
+                  {showPass ? "🙈" : "👁"}
+                </button>
+              </div>
 
               {error && <div className="text-red-400 text-xs text-center bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">{error}</div>}
               {success && <div className="text-emerald-400 text-xs text-center bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-3 py-2">{success}</div>}
@@ -1640,6 +1647,18 @@ function LoginScreen() {
                 {loading ? "Logowanie..." : "Zaloguj sie"}
               </button>
 
+              <button onClick={async () => {
+                if (!loginEmail) { setError("Wpisz email aby zresetowac haslo"); return; }
+                setLoading(true);
+                const { error } = await supabase.auth.resetPasswordForEmail(loginEmail, {
+                  redirectTo: window.location.origin,
+                });
+                setLoading(false);
+                if (error) { setError(error.message); }
+                else { setSuccess("Link do resetowania hasla zostal wyslany na " + loginEmail); }
+              }} className="text-slate-500 text-xs text-center hover:text-slate-300 transition-colors">
+                Zapomniales hasla? Wyslij link resetujacy
+              </button>
               <button onClick={() => { setMode("register"); setError(""); setSuccess(""); }}
                 className="text-slate-400 text-xs text-center hover:text-white transition-colors">
                 Nie masz konta? Zarejestruj sie
