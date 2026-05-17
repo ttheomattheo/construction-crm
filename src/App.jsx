@@ -2436,7 +2436,13 @@ export default function App() {
           ))}
         </nav>
         <div className="px-4 pt-4 border-t border-[#1E2D45]">
-          <div className="text-slate-600 text-xs text-center">BuildCRM v1.0</div>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center text-blue-400 font-bold">P</div>
+            <div>
+              <div className="text-white text-sm font-semibold">Piotr Handlowiec</div>
+              <div className="text-slate-500 text-xs">Region Poludnie</div>
+            </div>
+          </div>
         </div>
       </div>
       <div className="flex-1 bg-black/60 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />
@@ -2454,6 +2460,23 @@ export default function App() {
   );
 
   if (!session) return <LoginScreen />;
+
+  if (userProfile && !userProfile.approved && userProfile.role !== "admin") return (
+    <div className="min-h-screen bg-[#0B0F1A] flex items-center justify-center p-4">
+      <div className="w-full max-w-md text-center">
+        <div className="w-20 h-20 bg-yellow-500/20 border border-yellow-500/30 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-6">⏳</div>
+        <div className="text-white font-black text-2xl mb-2">Konto oczekuje na zatwierdzenie</div>
+        <div className="text-slate-400 text-sm mb-6">Twoje konto zostalo zarejestrowane i czeka na zatwierdzenie przez administratora. Otrzymasz dostep po weryfikacji.</div>
+        <div className="bg-[#141929] border border-[#1E2D45] rounded-2xl p-4 mb-6">
+          <div className="text-slate-400 text-xs mb-1">Zalogowany jako</div>
+          <div className="text-white font-semibold text-sm">{session.user.email}</div>
+        </div>
+        <button onClick={() => supabase.auth.signOut()} className="w-full bg-red-500/10 border border-red-500/20 text-red-400 font-semibold text-sm py-3 rounded-xl hover:bg-red-500/20 transition-colors">
+          🚪 Wyloguj sie
+        </button>
+      </div>
+    </div>
+  );
 
   if (loading) return (
     <div className="flex h-screen bg-[#0B0F1A] items-center justify-center">
@@ -2589,10 +2612,23 @@ export default function App() {
             </div>
           </div>
         </div>
-        <div className="flex-1 overflow-auto p-4 pb-4 md:pb-6">
+        <div className={`flex-1 overflow-auto p-4 ${page === "calendar" ? "pb-4" : "pb-20"} md:pb-6`}>
           {pages[page]}
         </div>
-        
+        {page !== "calendar" && (
+          <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#141929] border-t border-[#1E2D45] flex z-40">
+            {navItems.map(item => (
+              <button key={item.id} onClick={() => setPage(item.id)}
+                className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 relative ${page===item.id ? "text-blue-400" : "text-slate-500"}`}>
+                <span className="text-xl">{item.icon}</span>
+                <span className="text-xs">{item.label}</span>
+                {item.id==="reminders" && pendingCount>0 && (
+                  <span className="absolute top-1 right-4 bg-red-500 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">{pendingCount}</span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
