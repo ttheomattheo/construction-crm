@@ -4,6 +4,7 @@ import { Bar } from "react-chartjs-2";
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from "chart.js";
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
+
 const statusColors = {
   "Aktywny":    "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30",
   "Prospekt":   "bg-blue-500/20 text-blue-400 border border-blue-500/30",
@@ -2360,8 +2361,59 @@ export default function App() {
       supabase.from("profiles").select("*").order("first_name").then(({ data }) => {
         if (data) setAllProfiles(data);
       });
+      // Poproś o zgodę na powiadomienia
+      if ("Notification" in window && Notification.permission === "default") {
+        Notification.requestPermission();
+      }
     }
   }, [session]);
+
+  // Powiadomienia - sprawdzaj co minute
+  useEffect(() => {
+    if (!session || reminders.length === 0) return;
+    if (!("Notification" in window)) return;
+
+    const getToday = () => {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    };
+
+    const sendNotif = (title, body, tag) => {
+      if (Notification.permission !== "granted") return;
+      try { new Notification(title, { body, icon: "/favicon.svg", tag }); } catch(e) {}
+    };
+
+    // Przy zaladowaniu - podsumowanie dzisiejszych zadan
+    const todayStr = getToday();
+    const todayTasks = reminders.filter(r => r.date === todayStr && !r.done);
+    if (todayTasks.length > 0) {
+      sendNotif(
+        "🔔 BuildCRM — zadania na dziś",
+        `Masz ${todayTasks.length} ${todayTasks.length === 1 ? "zadanie" : "zadań"} do wykonania`,
+        "daily"
+      );
+    }
+
+    // Co minute - sprawdz za 15 minut i o 8:00
+    const interval = setInterval(() => {
+      const now = new Date();
+      const todayStr = getToday();
+      const nowTime = `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
+      const in15 = new Date(now.getTime() + 15 * 60 * 1000);
+      const in15Time = `${String(in15.getHours()).padStart(2,"0")}:${String(in15.getMinutes()).padStart(2,"0")}`;
+
+      if (nowTime === "08:00") {
+        const tasks = reminders.filter(r => r.date === todayStr && !r.done);
+        if (tasks.length > 0) sendNotif("☀️ Dzień dobry!", `${tasks.length} zadań na dziś`, "morning");
+      }
+
+      reminders.filter(r => r.date === todayStr && r.time === in15Time && !r.done).forEach(r => {
+        sendNotif(`⏰ Za 15 minut: ${r.title}`, r.clientName || "Przypomnienie", `r-${r.id}`);
+      });
+    }, 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [session, reminders]);
 
   async function loadAll() {
     setLoading(true);
