@@ -1,38 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 import { Bar } from "react-chartjs-2";
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from "chart.js";
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
-
-// Rejestracja Service Workera i powiadomień push
-async function registerServiceWorker() {
-  if (!("serviceWorker" in navigator) || !("Notification" in window)) return null;
-  try {
-    const reg = await navigator.serviceWorker.register("/sw.js");
-    return reg;
-  } catch (e) {
-    console.log("SW registration failed:", e);
-    return null;
-  }
-}
-
-async function requestNotificationPermission() {
-  if (!("Notification" in window)) return false;
-  if (Notification.permission === "granted") return true;
-  if (Notification.permission === "denied") return false;
-  const permission = await Notification.requestPermission();
-  return permission === "granted";
-}
-
-function showLocalNotification(title, body, tag = "buildcrm") {
-  if (Notification.permission !== "granted") return;
-  new Notification(title, {
-    body,
-    icon: "/icon-192.png",
-    tag,
-    requireInteraction: false,
-  });
-}
 
 const statusColors = {
   "Aktywny":    "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30",
@@ -2390,64 +2360,8 @@ export default function App() {
       supabase.from("profiles").select("*").order("first_name").then(({ data }) => {
         if (data) setAllProfiles(data);
       });
-      // Rejestracja Service Workera
-      registerServiceWorker();
-      // Poproś o zgodę na powiadomienia
-      requestNotificationPermission();
     }
   }, [session]);
-
-  // Sprawdzaj przypomnienia co minutę
-  useEffect(() => {
-    if (!session || reminders.length === 0) return;
-    const checkReminders = () => {
-      const now = new Date();
-      const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
-      const currentTime = `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
-
-      // Sprawdź czy jest 8:00 - wyślij podsumowanie dnia
-      if (currentTime === "08:00") {
-        const todayReminders = reminders.filter(r => r.date === todayStr && !r.done);
-        if (todayReminders.length > 0) {
-          showLocalNotification(
-            "☀️ Dzień dobry! Twoje zadania na dziś",
-            `Masz ${todayReminders.length} ${todayReminders.length === 1 ? "zadanie" : "zadań"} do wykonania dzisiaj`,
-            "morning-summary"
-          );
-        }
-      }
-
-      // Sprawdź przypomnienia za 15 minut
-      const in15 = new Date(now.getTime() + 15 * 60 * 1000);
-      const in15Str = `${String(in15.getHours()).padStart(2,"0")}:${String(in15.getMinutes()).padStart(2,"0")}`;
-      const upcoming = reminders.filter(r =>
-        r.date === todayStr &&
-        r.time === in15Str &&
-        !r.done
-      );
-      upcoming.forEach(r => {
-        showLocalNotification(
-          `⏰ Za 15 minut: ${r.title}`,
-          r.clientName ? `Klient: ${r.clientName}` : "Przypomnienie z kalendarza",
-          `reminder-${r.id}`
-        );
-      });
-    };
-
-    // Sprawdź od razu przy ładowaniu
-    const todayStr = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,"0")}-${String(new Date().getDate()).padStart(2,"0")}`;
-    const todayCount = reminders.filter(r => r.date === todayStr && !r.done).length;
-    if (todayCount > 0 && Notification.permission === "granted") {
-      showLocalNotification(
-        "🔔 BuildCRM — masz zadania na dziś",
-        `${todayCount} ${todayCount === 1 ? "zadanie czeka" : "zadań czeka"} na wykonanie`,
-        "daily-check"
-      );
-    }
-
-    const interval = setInterval(checkReminders, 60 * 1000);
-    return () => clearInterval(interval);
-  }, [session, reminders]);
 
   async function loadAll() {
     setLoading(true);
